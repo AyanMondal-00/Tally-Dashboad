@@ -1,0 +1,44 @@
+{
+  "summary": "Full backend + frontend E2E test of TallyPulse dashboards. Backend: created /app/backend/tests/backend_test.py (37 pytest tests) covering /api/companies, all 5 role dashboards x 3 companies, structure/shape assertions, ledger drilldown, Tally XML upload (valid/non-xml/malformed/no-voucher), reset-demo, 404/422 handling, _id leak check. 36/37 passed; 1 intentional data-consistency test fails (ledger opening+debit-credit != closing). Frontend: verified all 5 dashboards load with charts + tables (no zero-width recharts), CEO Top5/10/30 + toppers tabs, daybook search filter (200->62 rows, empty state on no match), ledger drilldown dialog with transactions, company switcher (acme-tech INR -> acme-global USD, KPIs change), dark/light theme toggle, Tally Sync Manager dialog, real XML upload via UI (imported company renders all 5 pages with empty states, no crashes), Restore Demo Data, mobile 390px drawer nav. No console errors anywhere.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/dashboard/accounts + /api/ledger/{id}", "issue": "Ledger balances do not reconcile: seed_data.py sets closing = party outstanding independently of the running balance (line 307), so opening+debit-credit (e.g. horizon-media = -139,059.85) != closing (777,746.82) and the last running balance in the statement != statement.closing. UI shows negative running balances under a positive closing balance - misleading for a finance app."},
+      {"endpoint": "/api/reset-demo", "issue": "Reset does not remove previously imported 'tally-import' company; it stays in the company list permanently with no delete endpoint. Also there is no way to remove/rename an import."},
+      {"endpoint": "/api/upload", "issue": "Every import overwrites the single fixed company_id 'tally-import', so multiple Tally companies cannot coexist (multi-company support is only real for seeded demo data)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Sidebar", "issue": "Duplicate data-testid values: desktop aside and mobile drawer both render nav-*-dashboard / data-upload-button, so strict selectors resolve to 2 elements and the hidden desktop copy blocks clicks on mobile viewports (test had to use ':visible'). Recommend suffixing mobile testids.", "selector": "[data-testid=\"nav-cfo-dashboard\"]", "priority": "LOW"},
+      {"component": "UploadDialog / AppContext", "issue": "After 'Restore Demo Data' the header still shows the imported company as selected (source switches back but selection is not reset to a demo company).", "selector": "[data-testid=\"reset-demo-data-button\"]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "CFO dashboard @390px", "issues": ["6px horizontal overflow (scrollWidth 396 vs clientWidth 390) - likely a wide table/chart container"]},
+      {"screen": "Header company switcher", "issues": ["Long company names (e.g. 'Imported from Tally (2 vouchers)') overflow/clip the 240px trigger instead of truncating cleanly"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Fix ledger balance reconciliation in seed_data.py: derive closing from opening + debit - credit (or seed txn signs so the running balance ends at outstanding), and keep ledgers[].debit/credit consistent with the statement.",
+    "Make sidebar data-testids unique between desktop and mobile drawer (e.g. nav-cfo-dashboard-mobile).",
+    "After Restore Demo Data, reset selected company to a demo company (e.g. acme-tech) and optionally drop the tally-import doc.",
+    "Fix 6px horizontal overflow on CFO dashboard at 390px width.",
+    "Optional: allow multiple imports (unique company_id per upload) instead of always overwriting 'tally-import'."
+  ],
+  "critical_code_review_comments": [
+    "seed_data.py:290-317 - closing balance computed independently of transactions; a finance dashboard must have self-consistent ledgers.",
+    "server.py:279-297 - upload hardcodes company_id 'tally-import' and has no size/voucher-count guard; a very large XML is parsed fully in memory.",
+    "server.py:60-65 - dashboard returns doc[role] with direct key access; a document missing a role key (e.g. from an older/partial import) would raise KeyError -> 500. Use doc.get(role) with a 404/empty fallback.",
+    "seed_data.py is 485 lines and server.py 313 lines - acceptable now, but voucher->dashboard derivation (build_from_vouchers) duplicates seed aggregation logic and should be extracted to a shared module."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py"],
+  "success_rate": {"backend": "97% (36/37)", "frontend": "100% of tested flows"},
+  "seed_data_creation": "Uploaded TEST_ XML fixtures creating company_id 'tally-import' (TEST_Alpha Traders / TEST_UI Alpha parties); cleaned up afterwards - Mongo now holds only acme-tech, acme-retail, acme-global. Fixture file /tmp/up/daybook.xml.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "N/A - no auth in v1 (no /app/memory/test_credentials.md needed)",
+  "context_for_next_testing_agent": "Backend suite lives at /app/backend/tests/backend_test.py (run: cd /app/backend && python -m pytest tests/backend_test.py -q). TestLedgerConsistency::test_ledger_balance_reconciles is the only failing test and documents the real ledger closing-balance bug - it should pass once seed_data.py is fixed. Ledger objects use key 'id' (not ledger_id) and statement transactions use debit/credit/balance (no 'amount'). Note sidebar data-testids are duplicated desktop/mobile; use ':visible' on mobile viewports. Upload tests create company_id 'tally-import' which persists across reset-demo - delete it from Mongo after testing.",
+  "rca_of_the_issue": "Ledger mismatch RCA: in seed_data.build_company the per-party statement running balance is accumulated from randomly signed vouchers (Sales/Payment = debit, Receipt/Purchase = credit) starting from a random opening, while `closing` is separately assigned p['outstanding']. The two are never reconciled, so both the ledger list row (opening/debit/credit/closing) and the drilldown dialog (last running balance vs closing) contradict each other."
+}

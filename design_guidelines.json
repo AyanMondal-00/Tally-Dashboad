@@ -1,0 +1,186 @@
+{
+  "project_name": "Tally ERP Dynamic Financial Dashboards",
+  "app_type": "dashboard (analytics / financial ERP dashboard, hybrid_fullstack)",
+  "design_archetype": "Swiss & High-Contrast Executive Corporate Finance",
+  "emotional_tone": "Authoritative, Precise, Command-Center Clarity, High-Trust Financial Control",
+  "theme_mode": "Support both Light (default Executive Slate/Clean Sand) and Dark (Deep Slate/Obsidian) theme toggle",
+
+  "typography": {
+    "heading_font": "Plus Jakarta Sans, sans-serif",
+    "body_font": "Inter, sans-serif",
+    "mono_font": "JetBrains Mono, monospace",
+    "hierarchy": {
+      "h1": "text-2xl md:text-3xl font-bold tracking-tight",
+      "h2": "text-xl md:text-2xl font-semibold tracking-tight",
+      "h3": "text-lg md:text-xl font-semibold",
+      "card_title": "text-sm font-medium uppercase tracking-wider text-muted-foreground",
+      "metric_value": "text-2xl md:text-3xl font-bold font-mono tracking-tight",
+      "body": "text-sm leading-relaxed",
+      "small": "text-xs text-muted-foreground"
+    },
+    "forbidden_fonts": ["Space Grotesk", "Inter for main expressive titles where personality is needed"]
+  },
+
+  "colors": {
+    "palette_mode": "Corporate Financial Precision",
+    "light_theme": {
+      "background": "#F8FAFC",
+      "card_bg": "#FFFFFF",
+      "sidebar_bg": "#0F172A",
+      "sidebar_fg": "#F8FAFC",
+      "border": "#E2E8F0",
+      "text_primary": "#0F172A",
+      "text_secondary": "#475569",
+      "primary": "#1E3A8A",
+      "primary_foreground": "#FFFFFF",
+      "accent_emerald": "#059669",
+      "accent_amber": "#D97706",
+      "accent_rose": "#DC2626",
+      "accent_indigo": "#4F46E5"
+    },
+    "dark_theme": {
+      "background": "#090D16",
+      "card_bg": "#111827",
+      "sidebar_bg": "#0B0F19",
+      "sidebar_fg": "#F3F4F6",
+      "border": "#1F2937",
+      "text_primary": "#F9FAFB",
+      "text_secondary": "#9CA3AF",
+      "primary": "#3B82F6",
+      "primary_foreground": "#FFFFFF",
+      "accent_emerald": "#10B981",
+      "accent_amber": "#F59E0B",
+      "accent_rose": "#EF4444",
+      "accent_indigo": "#6366F1"
+    },
+    "forbidden_colors": ["#1B93A4", "#7351B7", "pure #000000 gradients", "full-screen bright neon gradients"],
+    "chart_colors": {
+      "sales_revenue": "#3B82F6",
+      "purchases": "#8B5CF6",
+      "receipts_collections": "#10B981",
+      "payments_expenses": "#EF4444",
+      "net_working_capital": "#F59E0B",
+      "aging_buckets": {
+        "0_30": "#10B981",
+        "31_60": "#3B82F6",
+        "61_90": "#F59E0B",
+        "above_90": "#EF4444"
+      }
+    }
+  },
+
+  "layout_strategy": {
+    "grid_system": "MODE B: High Density Dashboard Grid",
+    "container_cols": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4",
+    "gap": "gap-4 md:gap-6",
+    "padding": "p-4 md:p-6 lg:p-8",
+    "panel_style": "Cardless or subtle 1px border cards with inner padding (p-5 md:p-6), rounded-lg (8px max radius), subtle ambient shadow shadow-sm",
+    "header_strategy": "Sticky glassmorphism header with backdrop-blur-md bg-white/80 dark:bg-gray-900/80 (NEVER pure transparent), z-40, containing Multi-company switcher + Sync Status + Data Upload Action + Dark/Light Toggle",
+    "sidebar_strategy": "Fixed left sidebar on desktop (w-64), responsive drawer on mobile, listing all 5 core role dashboards (CEO, CFO, Accounts, Purchase, Sales) + Data Upload / Tally Sync Manager"
+  },
+
+  "dashboards_breakdown": {
+    "ceo_dashboard": {
+      "title": "CEO Dashboard — Executive Strategic View",
+      "components": [
+        "Business Snapshot KPI Cards (Gross vs Net Sales, Total Purchases, Total Receipts, Total Payments with MoM % growth indicators)",
+        "Liquidity & Net Cash Flow Panel (Bank Balances, Cash-in-hand, Net Working Capital gauge)",
+        "Executive Trends Chart (MoM & YoY Revenue & Gross Profit Margin area/line chart)",
+        "Toppers Watchlist Tabs (Top 5/10/30 Customers, Suppliers, and Revenue Items)",
+        "Inactive Customer/Account Alert Panel (Accounts with zero activity > 60 days with revenue impact risk)"
+      ]
+    },
+    "cfo_dashboard": {
+      "title": "CFO Dashboard — Financial Control & Risk",
+      "components": [
+        "Aging Outstanding Analysis (Receivables & Payables by >30, >60, >90, >120 day buckets with interactive bar/stacked charts)",
+        "Working Capital & Cash Flow Projections (Expected Collections vs Upcoming Liabilities with due date breakdown)",
+        "Expense Breakdown (Direct vs Indirect Expenses vs Revenue ratio donut/pie visual)",
+        "Financial Statement Overview Tabs (P&L Snapshot, Balance Sheet Summary, Trial Balance High-Level Table)"
+      ]
+    },
+    "accounts_dashboard": {
+      "title": "Accounts Dashboard — Operational Finance & Books",
+      "components": [
+        "Live Daybook Feed (Chronological searchable feed of Sales, Purchases, Payments, Receipts, Journal Vouchers)",
+        "General Ledger & Party Statements (Opening/Closing balances with modal drill-down to voucher-level transactions)",
+        "Pending Collection Dashboard (Bill-wise payment status table with overdue highlights)",
+        "Receipt & Payment Summaries (Cash vs Bank transaction breakdowns)"
+      ]
+    },
+    "purchase_dashboard": {
+      "title": "Purchase Dashboard — Procurement & Vendor Management",
+      "components": [
+        "Purchase Trends & Volume (Monthly trends & vendor-wise procurement volume charts)",
+        "Vendor Payables Table (Outstanding supplier balances, due dates, credit days remaining)",
+        "Purchase Order Tracking (Pending POs, partial delivery status indicators)",
+        "Supplier Analysis Ranking (Top suppliers by volume, billing value, and top purchased inventory items)"
+      ]
+    },
+    "sales_dashboard": {
+      "title": "Sales Dashboard — Revenue & Sales Team Performance",
+      "components": [
+        "Sales Performance Analytics (Revenue split by Customer, Stock Item, Stock Group, Region, and Sales Rep)",
+        "Pending Sales Orders Table (Unfulfilled orders, committed delivery dates)",
+        "Sales Force Automation Summary (Field rep visit logs, GPS check-in status overview)",
+        "Customer Buying Patterns (Item purchase frequency, cross-sell/upsell opportunity flags)"
+      ]
+    },
+    "shared_features": {
+      "company_switcher": "Dropdown component to switch between Tally companies (e.g. Acme Tech Corp - Main, Acme Retail West, Acme Global Exports)",
+      "data_upload_panel": "Modal/Panel for uploading Tally ERP 9 / TallyPrime XML & Excel export files or resetting back to Seeded Tally Demo Data",
+      "date_range_picker": "Shadcn DatePicker/Select for FY selection (e.g., FY 2024-25, Q1, Q2, Custom Date Range)"
+    }
+  },
+
+  "image_urls": {
+    "avatars": [
+      {
+        "url": "https://images.unsplash.com/photo-1560250097-0b93528c311a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMGV4ZWN1dGl2ZSUyMHBvcnRyYWl0fGVufDB8fHx8MTc4ODM0ODA5M3ww&ixlib=rb-4.1.0&q=85",
+        "description": "Executive portrait for CEO profile",
+        "category": "user_avatar"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1573497161161-c3e73707e25c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODd8MHwxfHNlYXJjaHw0fHxidXNpbmVzcyUyMGV4ZWN1dGl2ZSUyMHBvcnRyYWl0fGVufDB8fHx8MTc4ODM0ODA5M3ww&ixlib=rb-4.1.0&q=85",
+        "description": "Executive portrait for CFO profile",
+        "category": "user_avatar"
+      }
+    ]
+  },
+
+  "testing_conventions": {
+    "attribute_name": "data-testid",
+    "examples": [
+      "data-testid=\"company-switcher-trigger\"",
+      "data-testid=\"nav-ceo-dashboard\"",
+      "data-testid=\"nav-cfo-dashboard\"",
+      "data-testid=\"nav-accounts-dashboard\"",
+      "data-testid=\"nav-purchase-dashboard\"",
+      "data-testid=\"nav-sales-dashboard\"",
+      "data-testid=\"kpi-gross-sales-value\"",
+      "data-testid=\"aging-chart-receivables\"",
+      "data-testid=\"daybook-search-input\"",
+      "data-testid=\"data-upload-button\"",
+      "data-testid=\"reset-demo-data-button\""
+    ]
+  },
+
+  "instructions_to_main_agent": [
+    "Build a responsive, highly functional 5-role financial dashboard application using React, Lucide-react, Recharts, and Shadcn components.",
+    "Ensure Javascript (.js/.jsx) file syntax is used throughout.",
+    "Seed high-quality, realistic Tally ERP 9 / TallyPrime demo data for all 5 role views (CEO, CFO, Accounts, Purchase, Sales) with realistic Indian/Global accounting formats (INR ₹ or USD $, Lakhs/Crores or Thousands/Millions toggle).",
+    "Provide a visible Multi-Company Switcher at top right/header so users can test switching between demo companies.",
+    "Provide an interactive Data Upload Modal/Drawer allowing users to upload XML or Excel files or re-seed sample Tally ERP data.",
+    "Implement drill-down modals for Daybook items and General Ledger statements to examine voucher details.",
+    "Ensure contrast meets APCA standards. DO NOT use forbidden colors (#1B93A4 teal or #7351B7 purple). Use dark slate sidebar with crisp blue (#3B82F6) and emerald (#10B981) highlights.",
+    "Include data-testid on all key navigation items, company switcher, dashboard tab buttons, data tables, and action triggers."
+  ],
+
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "Avoid standard AI slop look: use sharp 1px borders, subtle backdrop blurs, dense scannable data grids, clean font hierarchies with mono tabular numbers.",
+    "Every interactive element MUST have hover, focus, and click feedback.",
+    "DO NOT use raw HTML select or raw date inputs; use Shadcn Select, Command, and Calendar/Popover components.",
+    "DO NOT use transparent header/dropdown backgrounds without backdrop blur or solid fill.",
+    "Always include data-testid attributes on interactive elements."
+  ]
+}
