@@ -193,10 +193,11 @@ VALID_XML = """<ENVELOPE><BODY><IMPORTDATA><REQUESTDATA>
 class TestUpload:
     def test_upload_valid_xml(self):
         files = {"file": ("daybook.xml", io.BytesIO(VALID_XML.encode()), "text/xml")}
-        r = requests.post(f"{API}/upload", files=files)
+        r = requests.post(f"{API}/upload", params={"mode": "replace"}, files=files)
         assert r.status_code == 200, r.text[:400]
         body = r.json()
-        assert body["vouchers"] == 3, body
+        assert body["total_vouchers"] == 3, body
+        assert body["new_vouchers"] == 3, body
         assert body["company_id"] == "tally-import"
         assert body["meta"]["source"] == "Tally Import"
 

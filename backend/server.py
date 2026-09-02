@@ -5,8 +5,9 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
+import re
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import seed_data
 
@@ -144,10 +145,42 @@ def _round(v):
     return round(float(v), 2)
 
 
+def _age_days(datestr, today):
+    try:
+        d = datetime.strptime(datestr[:10], "%Y-%m-%d").date()
+        return max((today - d).days, 0)
+    except Exception:
+        return 0
+
+
+def _bucket(days):
+    if days <= 30:
+        return "0_30"
+    if days <= 60:
+        return "31_60"
+    if days <= 90:
+        return "61_90"
+    return "above_90"
+
+
+DEBIT_TYPES = ("Sales", "Payment", "Journal")
+
+
+def merge_vouchers(existing, new):
+    """Incremental merge, deduped by (type, voucher_no, date); newer wins."""
+    def key(v):
+        return (v.get("type"), v.get("voucher_no"), v.get("date"))
+    m = {key(v): v for v in existing}
+    for v in new:
+        m[key(v)] = v
+    return list(m.values())
+
+
 def build_from_vouchers(company_id, name, vouchers):
-    """Compute the dashboard subset that is derivable from raw vouchers."""
-    vouchers = [v for v in vouchers if v["amount"] > 0]
+    """Compute all role dashboards derivable from raw Tally vouchers."""
+    vouchers = [v for v in vouchers if v.get("amount", 0) > 0]
     vouchers.sort(key=lambda x: x["date"], reverse=True)
+    today = datetime.now(timezone.utc).date()
 
     def total(t):
         return _round(sum(v["amount"] for v in vouchers if v["type"] == t))
@@ -156,11 +189,13 @@ def build_from_vouchers(company_id, name, vouchers):
     total_purchases = total("Purchase")
     total_receipts = total("Receipt")
     total_payments = total("Payment")
+    net_sales = gross_sales
 
+    # Monthly trend
     monthly_map = {}
     for v in vouchers:
-        key = v["date"][:7] if len(v["date"]) >= 7 else "n/a"
-        m = monthly_map.setdefault(key, {"sales": 0, "purchases": 0, "receipts": 0, "payments": 0})
+        k = v["date"][:7] if len(v["date"]) >= 7 else "n/a"
+        m = monthly_map.setdefault(k, {"sales": 0, "purchases": 0, "receipts": 0, "payments": 0})
         if v["type"] == "Sales":
             m["sales"] += v["amount"]
         elif v["type"] == "Purchase":
@@ -181,61 +216,138 @@ def build_from_vouchers(company_id, name, vouchers):
                         "receipts": _round(mm["receipts"]), "payments": _round(mm["payments"]),
                         "gross_profit": _round(mm["sales"] * 0.28), "gp_margin": 28})
 
-    cust = {}
-    supp = {}
+    def mom(field):
+        if len(monthly) >= 2 and monthly[-2][field]:
+            return _round((monthly[-1][field] - monthly[-2][field]) / monthly[-2][field] * 100)
+        return None
+
+    # Per-party aggregation
+    parties = {}
     for v in vouchers:
-        if v["type"] in ("Sales", "Receipt"):
-            c = cust.setdefault(v["party"], {"billing": 0, "paid": 0})
-            if v["type"] == "Sales":
-                c["billing"] += v["amount"]
-            else:
-                c["paid"] += v["amount"]
-        elif v["type"] in ("Purchase", "Payment"):
-            s = supp.setdefault(v["party"], {"billing": 0, "paid": 0})
-            if v["type"] == "Purchase":
-                s["billing"] += v["amount"]
-            else:
-                s["paid"] += v["amount"]
+        p = parties.setdefault(v["party"], {"vouchers": [], "sales": 0, "receipts": 0,
+                                            "purchases": 0, "payments": 0, "latest": ""})
+        p["vouchers"].append(v)
+        t = v["type"]
+        if t == "Sales":
+            p["sales"] += v["amount"]
+        elif t == "Receipt":
+            p["receipts"] += v["amount"]
+        elif t == "Purchase":
+            p["purchases"] += v["amount"]
+        elif t == "Payment":
+            p["payments"] += v["amount"]
+        if v["date"] > p["latest"]:
+            p["latest"] = v["date"]
 
-    top_customers = sorted(
-        [{"name": k, "billing": _round(x["billing"]),
-          "outstanding": _round(max(x["billing"] - x["paid"], 0)), "last_active_days": 0}
-         for k, x in cust.items() if x["billing"] > 0],
-        key=lambda z: z["billing"], reverse=True)[:30]
-    top_suppliers = sorted(
-        [{"name": k, "billing": _round(x["billing"]),
-          "outstanding": _round(max(x["billing"] - x["paid"], 0)), "last_active_days": 0}
-         for k, x in supp.items() if x["billing"] > 0],
-        key=lambda z: z["billing"], reverse=True)[:30]
+    customers, suppliers, ledgers = [], [], []
+    ledger_statements = {}
+    for pname, p in parties.items():
+        is_customer = (p["sales"] + p["receipts"]) >= (p["purchases"] + p["payments"])
+        group = "Sundry Debtors" if is_customer else "Sundry Creditors"
+        billing = p["sales"] if is_customer else p["purchases"]
+        paid = p["receipts"] if is_customer else p["payments"]
+        outstanding = _round(max(billing - paid, 0))
+        txns = sorted(p["vouchers"], key=lambda x: x["date"])
+        bal = dr_t = cr_t = 0.0
+        rows = []
+        for t in txns:
+            is_debit = t["type"] in DEBIT_TYPES
+            dr = t["amount"] if is_debit else 0
+            cr = 0 if is_debit else t["amount"]
+            bal += dr - cr
+            dr_t += dr
+            cr_t += cr
+            rows.append({"date": t["date"], "voucher_type": t["type"], "voucher_no": t["voucher_no"],
+                         "debit": _round(dr), "credit": _round(cr), "balance": _round(bal),
+                         "narration": t.get("narration", "")})
+        lid = re.sub(r"[^a-z0-9]+", "-", pname.lower()).strip("-") or "ledger"
+        base, n = lid, 1
+        while lid in ledger_statements:
+            n += 1
+            lid = f"{base}-{n}"
+        days = _age_days(p["latest"], today)
+        entry = {"id": lid, "name": pname, "group": group, "opening": 0,
+                 "debit": _round(dr_t), "credit": _round(cr_t), "closing": _round(bal),
+                 "outstanding": outstanding, "billing": _round(billing),
+                 "days": days, "last_active_days": days, "latest": p["latest"]}
+        ledgers.append(entry)
+        ledger_statements[lid] = {"name": pname, "group": group, "opening": 0,
+                                  "closing": _round(bal), "transactions": rows}
+        (customers if is_customer else suppliers).append(entry)
 
-    debtors = _round(sum(c["outstanding"] for c in top_customers))
-    creditors = _round(sum(s["outstanding"] for s in top_suppliers))
-    net_sales = gross_sales
+    top_customers = sorted(customers, key=lambda z: z["billing"], reverse=True)[:30]
+    top_suppliers = sorted(suppliers, key=lambda z: z["billing"], reverse=True)[:30]
 
-    recv_rows = [{"name": c["name"], "amount": c["outstanding"], "days": 0, "bucket": "0_30"}
-                 for c in top_customers if c["outstanding"] > 0]
-    receivables = {"buckets": {"0_30": debtors, "31_60": 0, "61_90": 0, "above_90": 0}, "rows": recv_rows}
-    pay_rows = [{"name": s["name"], "amount": s["outstanding"], "days": 0, "bucket": "0_30"}
-                for s in top_suppliers if s["outstanding"] > 0]
-    payables = {"buckets": {"0_30": creditors, "31_60": 0, "61_90": 0, "above_90": 0}, "rows": pay_rows}
+    def aging(plist):
+        buckets = {"0_30": 0.0, "31_60": 0.0, "61_90": 0.0, "above_90": 0.0}
+        rows = []
+        for p in plist:
+            if p["outstanding"] <= 0:
+                continue
+            b = _bucket(p["days"])
+            buckets[b] += p["outstanding"]
+            rows.append({"name": p["name"], "amount": p["outstanding"], "days": p["days"], "bucket": b})
+        return {"buckets": {k: _round(v) for k, v in buckets.items()},
+                "rows": sorted(rows, key=lambda x: x["amount"], reverse=True)}
+
+    receivables = aging(customers)
+    payables = aging(suppliers)
+    debtors = _round(sum(receivables["buckets"].values()))
+    creditors = _round(sum(payables["buckets"].values()))
+
+    pending = []
+    for c in sorted([c for c in customers if c["outstanding"] > 0], key=lambda x: x["days"], reverse=True)[:40]:
+        sv = sorted([v for v in parties[c["name"]]["vouchers"] if v["type"] == "Sales"], key=lambda x: x["date"])
+        bill_no = sv[-1]["voucher_no"] if sv else "-"
+        inv_date = sv[-1]["date"] if sv else c["latest"]
+        try:
+            dd = datetime.strptime(inv_date[:10], "%Y-%m-%d").date() + timedelta(days=30)
+            due, overdue = dd.strftime("%Y-%m-%d"), max((today - dd).days, 0)
+        except Exception:
+            due, overdue = "", 0
+        pending.append({"bill_no": bill_no, "party": c["name"], "date": inv_date, "due_date": due,
+                        "amount": c["outstanding"], "overdue_days": overdue,
+                        "status": "Overdue" if overdue > 0 else "Due"})
+
+    def mode_sum(vt, mode):
+        return _round(sum(v["amount"] for v in vouchers if v["type"] == vt and v.get("mode", "Bank") == mode))
+
+    rp_summary = {"cash": {"receipts": mode_sum("Receipt", "Cash"), "payments": mode_sum("Payment", "Cash")},
+                  "bank": {"receipts": mode_sum("Receipt", "Bank"), "payments": mode_sum("Payment", "Bank")}}
+
+    vendor_payables = []
+    for s in sorted([s for s in suppliers if s["outstanding"] > 0], key=lambda x: x["outstanding"], reverse=True)[:15]:
+        try:
+            dd = datetime.strptime(s["latest"][:10], "%Y-%m-%d").date() + timedelta(days=30)
+            due, left = dd.strftime("%Y-%m-%d"), (dd - today).days
+        except Exception:
+            due, left = "", 0
+        vendor_payables.append({"vendor": s["name"], "outstanding": s["outstanding"],
+                                "due_date": due, "credit_days_left": left})
+
+    inactive = [{"name": c["name"], "last_active_days": c["days"], "balance": c["outstanding"],
+                 "annual_value": c["billing"]}
+                for c in sorted(customers, key=lambda x: x["days"], reverse=True) if c["days"] >= 60][:12]
 
     now = datetime.now(timezone.utc)
     return {
         "company_id": company_id,
-        "meta": {"id": company_id, "name": name, "branch": "Imported",
-                 "currency": "INR", "symbol": "₹",
+        "raw_vouchers": vouchers,
+        "meta": {"id": company_id, "name": name, "branch": "Live Sync",
+                 "currency": "INR", "symbol": "₹", "voucher_count": len(vouchers),
                  "last_sync": now.strftime("%Y-%m-%d %H:%M"), "source": "Tally Import"},
         "ceo": {
             "business_snapshot": {"gross_sales": gross_sales, "net_sales": net_sales,
                                   "total_purchases": total_purchases, "total_receipts": total_receipts,
                                   "total_payments": total_payments,
-                                  "mom": {"sales": 0, "purchases": 0, "receipts": 0, "payments": 0}},
+                                  "mom": {"sales": mom("sales"), "purchases": mom("purchases"),
+                                          "receipts": mom("receipts"), "payments": mom("payments")}},
             "liquidity": {"banks": [], "bank_total": 0, "cash_in_hand": 0,
                           "net_working_capital": _round(debtors - creditors),
                           "debtors": debtors, "creditors": creditors},
             "trends": {"monthly": monthly, "prev_year": []},
             "toppers": {"customers": top_customers, "suppliers": top_suppliers, "items": []},
-            "inactive": [],
+            "inactive": inactive,
         },
         "cfo": {
             "receivables": receivables, "payables": payables, "projection": [],
@@ -256,19 +368,17 @@ def build_from_vouchers(company_id, name, vouchers):
                            ]},
         },
         "accounts": {
-            "daybook": vouchers, "ledgers": [], "pending_collections": [],
-            "rp_summary": {"cash": {"receipts": 0, "payments": 0},
-                           "bank": {"receipts": total_receipts, "payments": total_payments}},
+            "daybook": vouchers,
+            "ledgers": sorted(ledgers, key=lambda x: abs(x["closing"]), reverse=True),
+            "pending_collections": pending, "rp_summary": rp_summary,
         },
         "purchase": {
             "monthly": [{"month": m["month"], "amount": m["purchases"]} for m in monthly],
             "vendor_wise": [{"vendor": s["name"], "amount": s["billing"]} for s in top_suppliers[:12]],
-            "vendor_payables": [{"vendor": s["name"], "outstanding": s["outstanding"],
-                                 "due_date": "", "credit_days_left": 0}
-                                for s in top_suppliers[:15] if s["outstanding"] > 0],
-            "po_tracking": [], "supplier_analysis": [{"supplier": s["name"], "volume": s["billing"],
-                                                      "billing": s["billing"], "outstanding": s["outstanding"]}
-                                                     for s in top_suppliers[:15]],
+            "vendor_payables": vendor_payables,
+            "po_tracking": [],
+            "supplier_analysis": [{"supplier": s["name"], "volume": s["billing"], "billing": s["billing"],
+                                   "outstanding": s["outstanding"]} for s in top_suppliers[:15]],
             "top_items": [], "total_purchases": total_purchases,
         },
         "sales": {
@@ -276,12 +386,12 @@ def build_from_vouchers(company_id, name, vouchers):
             "by_item": [], "by_group": [], "by_region": [], "by_rep": [],
             "pending_orders": [], "sfa": [], "buying_patterns": [], "net_sales": net_sales,
         },
-        "ledger_statements": {},
+        "ledger_statements": ledger_statements,
     }
 
 
 @api_router.post("/upload")
-async def upload_tally(file: UploadFile = File(...)):
+async def upload_tally(file: UploadFile = File(...), mode: str = Query("merge")):
     fname = (file.filename or "").lower()
     content = await file.read()
     if not fname.endswith(".xml"):
@@ -295,10 +405,32 @@ async def upload_tally(file: UploadFile = File(...)):
         raise HTTPException(status_code=400,
                             detail="No vouchers found in the XML. Export Daybook with vouchers from Tally.")
     company_id = "tally-import"
-    name = f"Imported from Tally ({len(vouchers)} vouchers)"
-    doc = build_from_vouchers(company_id, name, vouchers)
+    existing = await db.company_data.find_one({"company_id": company_id})
+    if existing and mode == "merge":
+        prior = existing.get("raw_vouchers", [])
+        merged = merge_vouchers(prior, vouchers)
+        added = max(len(merged) - len(prior), 0)
+    else:
+        merged = vouchers
+        added = len(vouchers)
+    doc = build_from_vouchers(company_id, "Tally Live Company", merged)
     await db.company_data.replace_one({"company_id": company_id}, doc, upsert=True)
-    return {"status": "ok", "vouchers": len(vouchers), "company_id": company_id, "meta": doc["meta"]}
+    return {"status": "ok", "new_vouchers": added, "total_vouchers": len(merged),
+            "company_id": company_id, "meta": doc["meta"]}
+
+
+@api_router.get("/tally/status")
+async def tally_status():
+    doc = await db.company_data.find_one({"company_id": "tally-import"}, {"meta": 1, "_id": 0})
+    if not doc:
+        return {"connected": False}
+    return {"connected": True, "meta": doc["meta"]}
+
+
+@api_router.delete("/tally")
+async def tally_disconnect():
+    await db.company_data.delete_one({"company_id": "tally-import"})
+    return {"status": "ok"}
 
 
 app.include_router(api_router)

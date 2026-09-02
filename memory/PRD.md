@@ -16,7 +16,8 @@ Web app that communicates with Tally (ERP 9 / TallyPrime), pulls data and create
 - Data: `seed_data.py` deterministically generates 3 companies with precomputed dashboard payloads + ledger statements, stored in `company_data` collection. Server seeds on startup if empty.
 
 ## Implemented (2026-06)
-- Multi-company switcher (header) + FY selector + dark/light toggle + live sync badge.
+- Multi-company switcher (header) + FY selector + dark/light toggle + live sync badge + header Refresh button.
+- **Tally Sync Manager (live-refresh workflow)**: first XML upload connects a "Tally Live Company"; a Refresh button re-loads the latest Tally Daybook XML and INCREMENTALLY MERGES it (dedup by type+voucher_no+date, newer wins) so all 5 dashboards recompute on every refresh. Full Reload (replace) + Disconnect + Restore Demo. Endpoints: POST /api/upload?mode=merge|replace, GET /api/tally/status, DELETE /api/tally. Imported vouchers drive computed ledgers (with drill-down), aging, pending collections, snapshots across all dashboards.
 - CEO: business snapshot KPIs w/ MoM, liquidity/NWC panel, executive trends area chart, toppers watchlist (Top 5/10/30 customers/suppliers/items), inactive account alerts.
 - CFO: receivables/payables aging (bucket charts + rows), cash flow projection, expense breakdown donut, financials tabs (P&L, Balance Sheet, Trial Balance).
 - Accounts: searchable live daybook, general ledger list with voucher-level drill-down modal, pending collections, cash/bank receipt-payment summary KPIs.

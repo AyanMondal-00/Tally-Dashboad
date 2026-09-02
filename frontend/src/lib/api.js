@@ -10,8 +10,12 @@ export const getDashboard = (role, companyId) =>
 export const getLedger = (ledgerId, companyId) =>
   api.get(`/ledger/${ledgerId}`, { params: { company_id: companyId } }).then((r) => r.data);
 export const resetDemo = () => api.post("/reset-demo").then((r) => r.data);
-export const uploadTally = (file) => {
+export const uploadTally = (file, mode = "merge") => {
   const fd = new FormData();
   fd.append("file", file);
-  return api.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data);
+  return api
+    .post("/upload", fd, { params: { mode }, headers: { "Content-Type": "multipart/form-data" } })
+    .then((r) => r.data);
 };
+export const getTallyStatus = () => api.get("/tally/status").then((r) => r.data);
+export const disconnectTally = () => api.delete("/tally").then((r) => r.data);

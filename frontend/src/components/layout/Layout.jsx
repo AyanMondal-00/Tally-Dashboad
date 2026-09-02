@@ -6,13 +6,14 @@ import { UploadDialog } from "@/components/layout/UploadDialog";
 
 export const Layout = ({ title }) => {
   const [uploadOpen, setUploadOpen] = useState(false);
+  const openUpload = () => setTimeout(() => setUploadOpen(true), 0);
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar onUpload={() => setUploadOpen(true)} />
+      <Sidebar onUpload={openUpload} />
       <div className="lg:pl-64">
         <Header title={title} />
         <main className="px-4 md:px-6 lg:px-8 py-6 space-y-6 overflow-x-hidden">
-          <Outlet context={{ openUpload: () => setUploadOpen(true) }} />
+          <Outlet context={{ openUpload }} />
         </main>
       </div>
       <UploadDialog open={uploadOpen} onOpenChange={setUploadOpen} />

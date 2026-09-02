@@ -1,5 +1,7 @@
 import React from "react";
 import { useApp } from "@/context/AppContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Building2, ChevronDown, Moon, Sun, RefreshCw, Check } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -15,6 +17,16 @@ const FYS = ["FY 2025-26", "FY 2024-25", "Q1 2025-26", "Q2 2025-26"];
 export const Header = ({ title }) => {
   const { companies, company, companyId, setCompanyId, dark, setDark } = useApp();
   const [fy, setFy] = React.useState("FY 2025-26");
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = React.useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    await queryClient.invalidateQueries({ queryKey: ["ledger"] });
+    setTimeout(() => setRefreshing(false), 600);
+    toast.success("Dashboards refreshed");
+  };
 
   return (
     <header className="sticky top-0 z-30 backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-b border-border">
@@ -67,6 +79,15 @@ export const Header = ({ title }) => {
               Synced {company.last_sync}
             </Badge>
           )}
+
+          <button
+            data-testid="header-refresh-button"
+            onClick={handleRefresh}
+            className="h-9 w-9 flex items-center justify-center rounded-md border border-border bg-card hover:bg-accent transition-colors"
+            title="Refresh dashboards"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+          </button>
 
           <button
             data-testid="theme-toggle"
