@@ -101,7 +101,23 @@ def _num(s):
 
 def parse_tally_xml(content: bytes):
     """Parse a TallyPrime/Tally ERP 9 Daybook or Voucher XML export into vouchers."""
-    text = content.decode("utf-8", errors="ignore")
+    text = None
+    for enc in ("utf-16", "utf-16-le", "utf-16-be", "utf-8-sig", "utf-8", "cp1252", "latin1"):
+        try:
+            decoded = content.decode(enc)
+            if "<VOUCHER" in decoded.upper() or "<ENVELOPE" in decoded.upper():
+                text = decoded
+                break
+        except UnicodeDecodeError:
+            continue
+    if not text:
+        text = content.decode("utf-8", errors="ignore")
+
+    # Clean invalid XML 1.0 entity references like &#4;, &#1;, etc. exported by Tally
+    text = re.sub(r"&#(?:\d+|x[0-9a-fA-F]+);", "", text)
+    # Clean control characters except newline and tab
+    text = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F]", "", text)
+
     root = ET.fromstring(text)
     vouchers = []
     for v in root.iter("VOUCHER"):
@@ -119,11 +135,14 @@ def parse_tally_xml(content: bytes):
             amt = _num(_txt(le, "AMOUNT"))
             if amt > amount:
                 amount = amt
-        if amount == 0:
-            for le in v.iter("LEDGERENTRIES.LIST"):
-                amt = _num(_txt(le, "AMOUNT"))
-                if amt > amount:
-                    amount = amt
+        for le in v.iter("LEDGERENTRIES.LIST"):
+            amt = _num(_txt(le, "AMOUNT"))
+            if amt > amount:
+                amount = amt
+        for le in v.iter("ALLINVENTORYENTRIES.LIST"):
+            amt = _num(_txt(le, "AMOUNT"))
+            if amt > amount:
+                amount = amt
         norm = vtype.lower()
         if "sale" in norm:
             t = "Sales"

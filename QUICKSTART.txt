@@ -1,0 +1,146 @@
+================================================================================
+           SILICON TALLY DASHBOARD (TALLYPULSE) - QUICK START GUIDE
+================================================================================
+
+--------------------------------------------------------------------------------
+1. WHAT IS THIS PROJECT?
+--------------------------------------------------------------------------------
+Silicon Tally Dashboard (TallyPulse) is a modern, responsive web application 
+designed for businesses using Tally ERP 9 and TallyPrime. It transforms raw 
+accounting data into interactive, real-time analytics and financial intelligence 
+tailored for five key organizational roles:
+
+  1. CEO Dashboard:
+     - High-level business overview: Gross/Net Revenue, Net Profit margin, 
+       Net Working Capital (NWC), Cash & Bank balances with MoM comparisons.
+     - Executive trend charts (Sales vs. Purchases vs. Collections).
+     - Watchlists: Top customers, top vendors, top selling inventory, 
+       and inactive client alerts.
+
+  2. CFO Dashboard:
+     - Receivables and Payables aging buckets (0-30, 31-60, 61-90, 90+ days).
+     - Cash flow forecasting and expense breakdown charts.
+     - Financial Statements tabs: Profit & Loss (P&L), Balance Sheet, 
+       and Trial Balance.
+
+  3. Accounts Dashboard:
+     - Searchable Live Daybook with voucher-level drill-down.
+     - General Ledger view with transaction debit/credit breakdown.
+     - Overdue and pending collections tracker.
+     - Cash and bank receipts vs. payments summary.
+
+  4. Purchase Dashboard:
+     - Purchase trend analysis and vendor spend distribution.
+     - Outstanding vendor payables and Purchase Order (PO) tracking.
+     - Supplier performance & volume metrics.
+
+  5. Sales Dashboard:
+     - Multi-dimensional sales breakdown (by Customer, Item, Group, Region, Rep).
+     - Pending Sales Orders (SO) fulfillment tracker.
+     - SFA (Sales Force Automation) field-visit tracker and GPS logs.
+     - Customer buying patterns and recurring order frequency.
+
+--------------------------------------------------------------------------------
+2. HOW IT WORKS (ARCHITECTURE & DATA FLOW)
+--------------------------------------------------------------------------------
+- FRONTEND:
+  * React 19 single-page application built with CRA / Craco.
+  * Tailwind CSS & Radix UI (shadcn-inspired) for modern dark/light UI.
+  * Recharts for responsive charts (Area, Bar, Pie/Donut).
+  * TanStack React Query & Axios for asynchronous API caching and state management.
+
+- BACKEND:
+  * FastAPI (Python) asynchronous REST API.
+  * MongoDB (via Motor async driver) storing pre-calculated multi-company metrics.
+  * Built-in XML Daybook Parser: Extracts Tally vouchers (Sales, Purchase, 
+    Payment, Receipt, Journal), computes aging, balances, ledgers, and ratios.
+  * Incremental Sync: Merges fresh Tally XML uploads seamlessly without duplicates.
+
+- DATA FLOW:
+  1. On startup, the backend automatically seeds 3 demo companies if database is empty.
+  2. Users can switch between companies (INR/USD) or upload an exported Tally XML 
+     Daybook directly via the header "Tally Sync Manager".
+  3. The parser processes vouchers, recalculates role KPIs and financial statements, 
+     and stores the live snapshot in MongoDB.
+  4. The frontend fetches role-specific datasets via `/api/dashboard/{role}`.
+
+--------------------------------------------------------------------------------
+3. PREREQUISITES
+--------------------------------------------------------------------------------
+- Python 3.10 or higher
+- Node.js 18+ and Yarn (or npm)
+- MongoDB instance (Local running on port 27017, or MongoDB Atlas connection string)
+
+--------------------------------------------------------------------------------
+4. QUICK SETUP & INSTALLATION
+--------------------------------------------------------------------------------
+
+STEP 1: Backend Setup
+---------------------
+1. Open a terminal and navigate to the backend directory:
+   cd backend
+
+2. Create and activate a Python virtual environment:
+   # Windows (PowerShell):
+   
+   .\venv\Scripts\Activate.ps1
+
+   # Linux / macOS:
+   python3 -m venv venv source venv/bin/activate
+
+3. Install required Python packages:
+   pip install -r requirements.txt
+
+4. Create a `.env` file inside the `backend` folder:
+   # backend/.env
+   MONGO_URL=mongodb://localhost:27017
+   DB_NAME=tally_pulse_db
+   CORS_ORIGINS=*
+
+5. Start the FastAPI backend server:
+   uvicorn server:app --host 0.0.0.0 --port 8000 --reload
+
+   * API will be live at: http://localhost:8000
+   * Interactive API Docs (Swagger): http://localhost:8000/docs
+
+
+STEP 2: Frontend Setup
+----------------------
+1. Open a second terminal and navigate to the frontend directory:
+   cd frontend
+
+2. Install frontend dependencies:
+   yarn install
+   # (or: npm install)
+
+3. Create a `.env` file inside the `frontend` folder:
+   # frontend/.env
+   REACT_APP_BACKEND_URL=http://localhost:8000
+
+4. Start the React development server:
+   yarn start
+   # (or: npm start)
+
+5. Open your browser and navigate to:
+   http://localhost:3000
+
+--------------------------------------------------------------------------------
+5. KEY API ENDPOINTS
+--------------------------------------------------------------------------------
+- GET    /api/companies           : List all available companies (demo + live).
+- GET    /api/dashboard/{role}    : Fetch data for 'ceo', 'cfo', 'accounts', 'purchase', or 'sales'.
+- GET    /api/ledger/{ledger_id}  : View transaction statement for a specific ledger.
+- POST   /api/upload              : Upload Tally XML Daybook (mode: merge | replace).
+- GET    /api/tally/status        : Check status of connected Tally Live Company.
+- DELETE /api/tally               : Disconnect / remove live imported Tally data.
+- POST   /api/reset-demo          : Restore demo datasets.
+
+--------------------------------------------------------------------------------
+6. RUNNING TESTS
+--------------------------------------------------------------------------------
+- Backend Tests:
+  cd backend
+  pytest tests/backend_test.py -v
+
+================================================================================
+python -m venv venv
