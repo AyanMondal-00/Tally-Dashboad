@@ -75,11 +75,12 @@ STEP 1: Backend Setup (Node.js & Express)
 2. Install dependencies:
    npm install
 
-3. Verify the `.env` file inside the `backend` folder:
+3. Verify the root `.env` file in the main project folder:
    PORT=8000
    MONGO_URL=mongodb://localhost:27017
    DB_NAME=tally_pulse_db
    CORS_ORIGINS=*
+   REACT_APP_BACKEND_URL=http://localhost:8000
 
 4. Start the Node.js backend server:
    npm start
@@ -97,8 +98,7 @@ STEP 2: Frontend Setup (React)
    npm install
    # (or: yarn install)
 
-3. Verify the `.env` file inside the `frontend` folder:
-   REACT_APP_BACKEND_URL=http://localhost:8000
+3. (Note: Frontend now reads configuration directly from the root `.env` file)
 
 4. Start the React development server:
    npm start

@@ -6,8 +6,9 @@
  */
 
 const { MongoClient } = require('mongodb');
+const path = require('path');
 const dotenv = require('dotenv');
-
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 dotenv.config();
 
 const mongoUrl = process.env.MONGO_URL || 'mongodb://localhost:27017';

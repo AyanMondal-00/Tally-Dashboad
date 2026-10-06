@@ -10,15 +10,19 @@
  * 6. Port 8000-e server start kore
  */
 
+// 1. Load environment variables first before importing modules that need them
+const path = require('path');
+const dotenv = require('dotenv');
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config();
+
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const { connectDB, getDB, client } = require('./src/config/db');
 const seedData = require('./src/utils/seedData');
 const apiRoutes = require('./src/routes/api.routes');
 
-// 1. Load environment variables
-dotenv.config();
+
 
 const app = express();
 const PORT = process.env.PORT || 8000;
