@@ -1,4 +1,3 @@
-import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppProvider, useApp } from "@/context/AppContext";
 import { Layout } from "@/components/layout/Layout";

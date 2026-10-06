@@ -44,103 +44,77 @@ tailored for five key organizational roles:
 2. HOW IT WORKS (ARCHITECTURE & DATA FLOW)
 --------------------------------------------------------------------------------
 - FRONTEND:
-  * React 19 single-page application built with CRA / Craco.
+  * React single-page application built with CRA / Craco.
   * Tailwind CSS & Radix UI (shadcn-inspired) for modern dark/light UI.
   * Recharts for responsive charts (Area, Bar, Pie/Donut).
   * TanStack React Query & Axios for asynchronous API caching and state management.
 
-- BACKEND:
-  * FastAPI (Python) asynchronous REST API.
-  * MongoDB (via Motor async driver) storing pre-calculated multi-company metrics.
-  * Built-in XML Daybook Parser: Extracts Tally vouchers (Sales, Purchase, 
-    Payment, Receipt, Journal), computes aging, balances, ledgers, and ratios.
+- BACKEND (Node.js + Express.js REST API):
+  * Express.js asynchronous REST API.
+  * MongoDB (native driver) storing pre-calculated multi-company metrics.
+  * Built-in XML Daybook Parser (fast-xml-parser): Extracts Tally vouchers 
+    (Sales, Purchase, Payment, Receipt, Journal), computes aging, balances, 
+    ledgers, and ratios.
   * Incremental Sync: Merges fresh Tally XML uploads seamlessly without duplicates.
-
-- DATA FLOW:
-  1. On startup, the backend automatically seeds 3 demo companies if database is empty.
-  2. Users can switch between companies (INR/USD) or upload an exported Tally XML 
-     Daybook directly via the header "Tally Sync Manager".
-  3. The parser processes vouchers, recalculates role KPIs and financial statements, 
-     and stores the live snapshot in MongoDB.
-  4. The frontend fetches role-specific datasets via `/api/dashboard/{role}`.
 
 --------------------------------------------------------------------------------
 3. PREREQUISITES
 --------------------------------------------------------------------------------
-- Python 3.10 or higher
-- Node.js 18+ and Yarn (or npm)
+- Node.js 18+ and npm (or yarn)
 - MongoDB instance (Local running on port 27017, or MongoDB Atlas connection string)
 
 --------------------------------------------------------------------------------
 4. QUICK SETUP & INSTALLATION
 --------------------------------------------------------------------------------
 
-STEP 1: Backend Setup
----------------------
+STEP 1: Backend Setup (Node.js & Express)
+-----------------------------------------
 1. Open a terminal and navigate to the backend directory:
    cd backend
 
-2. Create and activate a Python virtual environment:
-   # Windows (PowerShell):
-   
-   .\venv\Scripts\Activate.ps1
+2. Install dependencies:
+   npm install
 
-   # Linux / macOS:
-   python3 -m venv venv source venv/bin/activate
-
-3. Install required Python packages:
-   pip install -r requirements.txt
-
-4. Create a `.env` file inside the `backend` folder:
-   # backend/.env
+3. Verify the `.env` file inside the `backend` folder:
+   PORT=8000
    MONGO_URL=mongodb://localhost:27017
    DB_NAME=tally_pulse_db
    CORS_ORIGINS=*
 
-5. Start the FastAPI backend server:
-   uvicorn server:app --host 0.0.0.0 --port 8000 --reload
+4. Start the Node.js backend server:
+   npm start
+   # (For auto-reload during development: npm run dev)
 
-   * API will be live at: http://localhost:8000
-   * Interactive API Docs (Swagger): http://localhost:8000/docs
+   * API will be live at: http://localhost:8000/api
 
 
-STEP 2: Frontend Setup
-----------------------
+STEP 2: Frontend Setup (React)
+------------------------------
 1. Open a second terminal and navigate to the frontend directory:
    cd frontend
 
 2. Install frontend dependencies:
-   yarn install
-   # (or: npm install)
+   npm install
+   # (or: yarn install)
 
-3. Create a `.env` file inside the `frontend` folder:
-   # frontend/.env
+3. Verify the `.env` file inside the `frontend` folder:
    REACT_APP_BACKEND_URL=http://localhost:8000
 
 4. Start the React development server:
-   yarn start
-   # (or: npm start)
+   npm start
+   # (or: yarn start)
 
 5. Open your browser and navigate to:
    http://localhost:3000
 
 --------------------------------------------------------------------------------
-5. KEY API ENDPOINTS
+5. KEY REST API ENDPOINTS
 --------------------------------------------------------------------------------
 - GET    /api/companies           : List all available companies (demo + live).
-- GET    /api/dashboard/{role}    : Fetch data for 'ceo', 'cfo', 'accounts', 'purchase', or 'sales'.
-- GET    /api/ledger/{ledger_id}  : View transaction statement for a specific ledger.
+- GET    /api/dashboard/:role     : Fetch data for 'ceo', 'cfo', 'accounts', 'purchase', or 'sales'.
+- GET    /api/ledger/:ledger_id   : View transaction statement for a specific ledger.
 - POST   /api/upload              : Upload Tally XML Daybook (mode: merge | replace).
 - GET    /api/tally/status        : Check status of connected Tally Live Company.
 - DELETE /api/tally               : Disconnect / remove live imported Tally data.
 - POST   /api/reset-demo          : Restore demo datasets.
-
---------------------------------------------------------------------------------
-6. RUNNING TESTS
---------------------------------------------------------------------------------
-- Backend Tests:
-  cd backend
-  pytest tests/backend_test.py -v
-
 ================================================================================
-python -m venv venv

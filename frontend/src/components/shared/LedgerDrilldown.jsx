@@ -21,51 +21,51 @@ export const LedgerDrilldown = ({ ledgerId, name, onClose }) => {
 
   return (
     <Dialog open={!!ledgerId} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col" data-testid="ledger-drilldown-dialog">
-        <DialogHeader>
-          <DialogTitle className="font-display flex items-center gap-2">
-            {name}
-            {stmt && <Badge variant="outline" className="font-normal">{stmt.group}</Badge>}
+      <DialogContent className="w-[95vw] max-w-3xl max-h-[88vh] p-4 sm:p-6 overflow-hidden flex flex-col min-w-0" data-testid="ledger-drilldown-dialog">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="font-display flex flex-wrap items-center gap-2 text-base sm:text-lg">
+            <span className="truncate">{name}</span>
+            {stmt && <Badge variant="outline" className="font-normal text-xs">{stmt.group}</Badge>}
           </DialogTitle>
         </DialogHeader>
         {isLoading ? (
           <div className="py-16 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-blue-600" /></div>
         ) : stmt ? (
           <>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-md bg-muted/60 p-3">
-                <p className="text-xs text-muted-foreground">Opening Balance</p>
-                <p className="font-mono font-semibold">{fmtFull(stmt.opening)}</p>
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
+              <div className="rounded-md bg-muted/60 p-2.5 sm:p-3">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Opening Balance</p>
+                <p className="font-mono font-semibold text-sm sm:text-base mt-0.5">{fmtFull(stmt.opening)}</p>
               </div>
-              <div className="rounded-md bg-muted/60 p-3">
-                <p className="text-xs text-muted-foreground">Closing Balance</p>
-                <p className="font-mono font-semibold">{fmtFull(stmt.closing)}</p>
+              <div className="rounded-md bg-muted/60 p-2.5 sm:p-3">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Closing Balance</p>
+                <p className="font-mono font-semibold text-sm sm:text-base mt-0.5">{fmtFull(stmt.closing)}</p>
               </div>
             </div>
-            <div className="overflow-auto flex-1 border rounded-md mt-2">
-              <Table>
-                <TableHeader className="sticky top-0 bg-card">
+            <div className="overflow-auto flex-1 border rounded-md mt-2 min-w-0">
+              <Table className="min-w-[520px] text-xs sm:text-sm">
+                <TableHeader className="sticky top-0 bg-card z-10">
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Voucher</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="text-right">Debit</TableHead>
-                    <TableHead className="text-right">Credit</TableHead>
-                    <TableHead className="text-right">Balance</TableHead>
+                    <TableHead className="py-2">Date</TableHead>
+                    <TableHead className="py-2">Voucher</TableHead>
+                    <TableHead className="py-2">Type</TableHead>
+                    <TableHead className="py-2 text-right">Debit</TableHead>
+                    <TableHead className="py-2 text-right">Credit</TableHead>
+                    <TableHead className="py-2 text-right">Balance</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {stmt.transactions.length === 0 && (
-                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No transactions</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No transactions found for this ledger</TableCell></TableRow>
                   )}
                   {stmt.transactions.map((t, i) => (
                     <TableRow key={i} data-testid={`ledger-txn-row-${i}`}>
-                      <TableCell className="whitespace-nowrap">{fmtDate(t.date)}</TableCell>
-                      <TableCell className="font-mono text-xs">{t.voucher_no}</TableCell>
-                      <TableCell>{t.voucher_type}</TableCell>
-                      <TableCell className="text-right font-mono">{t.debit ? fmtFull(t.debit) : "—"}</TableCell>
-                      <TableCell className="text-right font-mono">{t.credit ? fmtFull(t.credit) : "—"}</TableCell>
-                      <TableCell className="text-right font-mono font-medium">{fmtFull(t.balance)}</TableCell>
+                      <TableCell className="whitespace-nowrap py-2">{fmtDate(t.date)}</TableCell>
+                      <TableCell className="font-mono text-[11px] sm:text-xs py-2">{t.voucher_no}</TableCell>
+                      <TableCell className="py-2">{t.voucher_type}</TableCell>
+                      <TableCell className="text-right font-mono py-2">{t.debit ? fmtFull(t.debit) : "—"}</TableCell>
+                      <TableCell className="text-right font-mono py-2">{t.credit ? fmtFull(t.credit) : "—"}</TableCell>
+                      <TableCell className="text-right font-mono font-semibold py-2">{fmtFull(t.balance)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

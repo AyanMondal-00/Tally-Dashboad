@@ -83,24 +83,32 @@ export const Sidebar = ({ onUpload }) => {
 
   return (
     <>
-      {/* Mobile toggle */}
+      {/* Mobile toggle button */}
       <button
         data-testid="sidebar-toggle"
         onClick={() => setOpen(true)}
-        className="lg:hidden fixed top-3 left-3 z-50 p-2 rounded-md bg-slate-900 text-white shadow-lg"
+        className="lg:hidden fixed top-2.5 left-2.5 z-40 p-2 rounded-lg bg-slate-900/90 text-white shadow-md hover:bg-slate-800 transition-colors backdrop-blur-sm"
+        aria-label="Toggle navigation menu"
       >
-        <Menu className="h-5 w-5" />
+        <Menu className="h-4.5 w-4.5" />
       </button>
 
-      {/* Desktop */}
-      <aside className="hidden lg:block fixed inset-y-0 left-0 w-64 bg-slate-900 z-40">{buildInner("")}</aside>
+      {/* Desktop fixed sidebar */}
+      <aside className="hidden lg:block fixed inset-y-0 left-0 w-64 bg-slate-900 z-40 border-r border-slate-800">{buildInner("")}</aside>
 
-      {/* Mobile drawer */}
+      {/* Mobile drawer with slide-in animation */}
       {open && (
-        <div className="lg:hidden fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
-          <div className="absolute inset-y-0 left-0 w-64 bg-slate-900">
-            <button onClick={() => setOpen(false)} className="absolute top-3 right-3 text-slate-400 p-1">
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-200" 
+            onClick={() => setOpen(false)} 
+          />
+          <div className="relative w-64 max-w-[80vw] bg-slate-900 h-full shadow-2xl flex flex-col z-10 animate-fade-up">
+            <button 
+              onClick={() => setOpen(false)} 
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1.5 rounded-md hover:bg-white/10 transition-colors"
+              aria-label="Close menu"
+            >
               <X className="h-5 w-5" />
             </button>
             {buildInner("-mobile")}

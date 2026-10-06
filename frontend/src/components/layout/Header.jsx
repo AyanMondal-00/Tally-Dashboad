@@ -29,30 +29,32 @@ export const Header = ({ title }) => {
   };
 
   return (
-    <header className="sticky top-0 z-30 backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-b border-border">
-      <div className="flex items-center justify-between gap-3 px-4 md:px-6 lg:px-8 py-3">
-        <div className="flex items-center gap-2 min-w-0 pl-10 lg:pl-0">
-          <span className="hidden md:inline text-sm font-medium text-muted-foreground truncate">{title}</span>
+    <header className="sticky top-0 z-30 backdrop-blur-md bg-white/85 dark:bg-slate-900/85 border-b border-border glass-header">
+      <div className="flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3">
+        <div className="flex items-center gap-2 min-w-0 pl-11 lg:pl-0">
+          <span className="text-xs sm:text-sm font-semibold text-foreground/80 truncate font-display">{title}</span>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           {/* Company switcher */}
           <Select value={companyId || ""} onValueChange={setCompanyId}>
             <SelectTrigger
               data-testid="company-switcher-trigger"
-              className="h-9 w-[180px] md:w-[240px] bg-card"
+              className="h-9 sm:h-10 w-[150px] xs:w-[190px] sm:w-[240px] md:w-[300px] lg:w-[340px] xl:w-[380px] bg-card hover:bg-accent/40 border border-border/80 text-xs sm:text-sm px-2.5 sm:px-3 shadow-2xs transition-colors rounded-lg"
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <Building2 className="h-4 w-4 text-blue-600 shrink-0" />
-                <SelectValue placeholder="Select company" className="truncate" />
+              <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+                <div className="p-1 rounded bg-blue-50 dark:bg-blue-950/60 shrink-0">
+                  <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <SelectValue placeholder="Select company" className="truncate font-medium text-xs sm:text-sm text-foreground" />
               </div>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="w-[280px] sm:w-[360px] md:w-[400px] max-w-[90vw] p-1.5 rounded-lg shadow-xl">
               {companies.map((c) => (
-                <SelectItem key={c.id} value={c.id} data-testid={`company-option-${c.id}`}>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{c.name}</span>
-                    <span className="text-[11px] text-muted-foreground">{c.branch} · {c.currency}</span>
+                <SelectItem key={c.id} value={c.id} data-testid={`company-option-${c.id}`} className="cursor-pointer py-2 px-2.5 rounded-md">
+                  <div className="flex flex-col gap-0.5 py-0.5 min-w-0">
+                    <span className="font-semibold text-xs sm:text-sm text-foreground truncate">{c.name}</span>
+                    <span className="text-[10px] sm:text-[11px] text-muted-foreground">{c.branch} · {c.currency}</span>
                   </div>
                 </SelectItem>
               ))}
@@ -60,22 +62,22 @@ export const Header = ({ title }) => {
           </Select>
 
           {/* FY selector */}
-          <div className="hidden md:block">
+          <div className="hidden lg:block">
             <FySelect value={fy} onValueChange={setFy}>
-              <FyTrigger data-testid="fy-selector-trigger" className="h-9 w-[130px] bg-card">
+              <FyTrigger data-testid="fy-selector-trigger" className="h-9 w-[120px] bg-card text-xs font-medium">
                 <FyValue />
               </FyTrigger>
               <FyContent>
                 {FYS.map((f) => (
-                  <FyItem key={f} value={f}>{f}</FyItem>
+                  <FyItem key={f} value={f} className="text-xs">{f}</FyItem>
                 ))}
               </FyContent>
             </FySelect>
           </div>
 
           {company && (
-            <Badge variant="outline" className="hidden xl:flex gap-1.5 h-9 px-3 font-normal border-emerald-200 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-900 dark:text-emerald-400">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <Badge variant="outline" className="hidden 2xl:flex gap-1.5 h-9 px-2.5 text-xs font-normal border-emerald-200 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-900 dark:text-emerald-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
               Synced {company.last_sync}
             </Badge>
           )}
@@ -83,19 +85,19 @@ export const Header = ({ title }) => {
           <button
             data-testid="header-refresh-button"
             onClick={handleRefresh}
-            className="h-9 w-9 flex items-center justify-center rounded-md border border-border bg-card hover:bg-accent transition-colors"
+            className="h-8 w-8 sm:h-9 sm:w-9 flex items-center justify-center rounded-md border border-border bg-card hover:bg-accent transition-colors shrink-0"
             title="Refresh dashboards"
           >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${refreshing ? "animate-spin text-blue-600" : "text-muted-foreground"}`} />
           </button>
 
           <button
             data-testid="theme-toggle"
             onClick={() => setDark(!dark)}
-            className="h-9 w-9 flex items-center justify-center rounded-md border border-border bg-card hover:bg-accent transition-colors"
+            className="h-8 w-8 sm:h-9 sm:w-9 flex items-center justify-center rounded-md border border-border bg-card hover:bg-accent transition-colors shrink-0"
             title="Toggle theme"
           >
-            {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {dark ? <Sun className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-400" /> : <Moon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-600" />}
           </button>
         </div>
       </div>

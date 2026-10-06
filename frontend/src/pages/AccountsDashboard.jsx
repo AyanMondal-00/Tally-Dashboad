@@ -36,77 +36,85 @@ export default function AccountsDashboard() {
   const rp = d.rp_summary;
 
   return (
-    <div className="space-y-6" data-testid="accounts-dashboard">
+    <div className="space-y-4 sm:space-y-6 min-w-0" data-testid="accounts-dashboard">
       <SectionHeader title="Accounts Dashboard" subtitle="Operational finance, daybook & ledgers" />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         <KpiCard label="Cash Receipts" value={rp.cash.receipts} tone="emerald" icon={ArrowDownToLine} />
         <KpiCard label="Cash Payments" value={rp.cash.payments} tone="rose" icon={ArrowUpFromLine} />
         <KpiCard label="Bank Receipts" value={rp.bank.receipts} tone="emerald" icon={ArrowDownToLine} />
         <KpiCard label="Bank Payments" value={rp.bank.payments} tone="rose" icon={ArrowUpFromLine} />
       </div>
 
-      <Tabs defaultValue="daybook">
-        <TabsList>
-          <TabsTrigger value="daybook" data-testid="accounts-tab-daybook">Live Daybook</TabsTrigger>
-          <TabsTrigger value="ledgers" data-testid="accounts-tab-ledgers">Ledgers</TabsTrigger>
-          <TabsTrigger value="collections" data-testid="accounts-tab-collections">Pending Collections</TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="daybook" className="w-full min-w-0">
+        <div className="overflow-x-auto no-scrollbar -mx-1 px-1">
+          <TabsList className="h-8 sm:h-9">
+            <TabsTrigger value="daybook" className="text-xs" data-testid="accounts-tab-daybook">Live Daybook</TabsTrigger>
+            <TabsTrigger value="ledgers" className="text-xs" data-testid="accounts-tab-ledgers">Ledgers</TabsTrigger>
+            <TabsTrigger value="collections" className="text-xs" data-testid="accounts-tab-collections">Pending Collections</TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="daybook" className="mt-4">
-          <Panel testId="daybook-panel">
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input data-testid="daybook-search-input" placeholder="Search party, voucher no, type…" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9 max-w-sm" />
+        <TabsContent value="daybook" className="mt-3 sm:mt-4 min-w-0">
+          <Panel testId="daybook-panel" className="min-w-0">
+            <div className="relative mb-3 w-full sm:max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input data-testid="daybook-search-input" placeholder="Search party, voucher no, type…" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9 h-8 sm:h-9 text-xs sm:text-sm w-full" />
             </div>
-            <div className="max-h-[520px] overflow-auto border rounded-md">
-              <Table>
+            <div className="max-h-[500px] overflow-auto border rounded-md min-w-0">
+              <Table className="min-w-[550px] text-xs sm:text-sm">
                 <TableHeader className="sticky top-0 bg-card z-10">
                   <TableRow>
-                    <TableHead>Date</TableHead><TableHead>Type</TableHead><TableHead>Voucher</TableHead>
-                    <TableHead>Party</TableHead><TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="py-2">Date</TableHead>
+                    <TableHead className="py-2">Type</TableHead>
+                    <TableHead className="py-2">Voucher</TableHead>
+                    <TableHead className="py-2">Party</TableHead>
+                    <TableHead className="py-2 text-right">Amount</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.slice(0, 200).map((v, i) => (
                     <TableRow key={i} data-testid={`daybook-row-${i}`}>
-                      <TableCell className="whitespace-nowrap">{fmtDate(v.date)}</TableCell>
-                      <TableCell><Badge variant="secondary" className={typeColor[v.type]}>{v.type}</Badge></TableCell>
-                      <TableCell className="font-mono text-xs">{v.voucher_no}</TableCell>
-                      <TableCell className="max-w-[220px] truncate">{v.party}</TableCell>
-                      <TableCell className="text-right font-mono">{fmtFull(v.amount)}</TableCell>
+                      <TableCell className="whitespace-nowrap py-2">{fmtDate(v.date)}</TableCell>
+                      <TableCell className="py-2"><Badge variant="secondary" className={`${typeColor[v.type]} text-[10px] sm:text-xs py-0`}>{v.type}</Badge></TableCell>
+                      <TableCell className="font-mono text-[11px] sm:text-xs py-2">{v.voucher_no}</TableCell>
+                      <TableCell className="max-w-[200px] truncate py-2 font-medium">{v.party}</TableCell>
+                      <TableCell className="text-right font-mono py-2">{fmtFull(v.amount)}</TableCell>
                     </TableRow>
                   ))}
-                  {filtered.length === 0 && <TableRow><TableCell colSpan={5}><EmptyState label="No vouchers match" /></TableCell></TableRow>}
+                  {filtered.length === 0 && <TableRow><TableCell colSpan={5} className="py-6"><EmptyState label="No vouchers match" /></TableCell></TableRow>}
                 </TableBody>
               </Table>
             </div>
           </Panel>
         </TabsContent>
 
-        <TabsContent value="ledgers" className="mt-4">
-          <Panel title="General Ledger & Party Statements" subtitle="Click a row to drill down to voucher level" testId="ledgers-panel">
-            <div className="max-h-[520px] overflow-auto border rounded-md">
-              <Table>
+        <TabsContent value="ledgers" className="mt-3 sm:mt-4 min-w-0">
+          <Panel title="General Ledger & Party Statements" subtitle="Click a row to drill down to voucher level" className="min-w-0" testId="ledgers-panel">
+            <div className="max-h-[500px] overflow-auto border rounded-md min-w-0">
+              <Table className="min-w-[650px] text-xs sm:text-sm">
                 <TableHeader className="sticky top-0 bg-card z-10">
                   <TableRow>
-                    <TableHead>Ledger</TableHead><TableHead>Group</TableHead>
-                    <TableHead className="text-right">Opening</TableHead><TableHead className="text-right">Debit</TableHead>
-                    <TableHead className="text-right">Credit</TableHead><TableHead className="text-right">Closing</TableHead>
-                    <TableHead></TableHead>
+                    <TableHead className="py-2">Ledger</TableHead>
+                    <TableHead className="py-2">Group</TableHead>
+                    <TableHead className="py-2 text-right">Opening</TableHead>
+                    <TableHead className="py-2 text-right">Debit</TableHead>
+                    <TableHead className="py-2 text-right">Credit</TableHead>
+                    <TableHead className="py-2 text-right">Closing</TableHead>
+                    <TableHead className="py-2 w-8"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {d.ledgers.length === 0 && <TableRow><TableCell colSpan={7}><EmptyState label="No ledgers available" /></TableCell></TableRow>}
+                  {d.ledgers.length === 0 && <TableRow><TableCell colSpan={7} className="py-6"><EmptyState label="No ledgers available" /></TableCell></TableRow>}
                   {d.ledgers.map((l, i) => (
                     <TableRow key={i} className="cursor-pointer hover:bg-accent/50" data-testid={`ledger-row-${i}`} onClick={() => setLedger(l)}>
-                      <TableCell className="font-medium max-w-[200px] truncate">{l.name}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{l.group}</TableCell>
-                      <TableCell className="text-right font-mono">{fmtMoney(l.opening)}</TableCell>
-                      <TableCell className="text-right font-mono">{fmtMoney(l.debit)}</TableCell>
-                      <TableCell className="text-right font-mono">{fmtMoney(l.credit)}</TableCell>
-                      <TableCell className="text-right font-mono font-semibold">{fmtMoney(l.closing)}</TableCell>
-                      <TableCell><ChevronRight className="h-4 w-4 text-muted-foreground" /></TableCell>
+                      <TableCell className="font-medium max-w-[220px] truncate py-2">{l.name}</TableCell>
+                      <TableCell className="text-[11px] sm:text-xs text-muted-foreground py-2">{l.group}</TableCell>
+                      <TableCell className="text-right font-mono py-2">{fmtMoney(l.opening)}</TableCell>
+                      <TableCell className="text-right font-mono py-2">{fmtMoney(l.debit)}</TableCell>
+                      <TableCell className="text-right font-mono py-2">{fmtMoney(l.credit)}</TableCell>
+                      <TableCell className="text-right font-mono font-semibold py-2">{fmtMoney(l.closing)}</TableCell>
+                      <TableCell className="py-2 px-2 text-right"><ChevronRight className="h-4 w-4 text-muted-foreground" /></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -115,27 +123,31 @@ export default function AccountsDashboard() {
           </Panel>
         </TabsContent>
 
-        <TabsContent value="collections" className="mt-4">
-          <Panel title="Pending Collection Dashboard" subtitle="Bill-wise payment status" testId="collections-panel">
-            <div className="max-h-[520px] overflow-auto border rounded-md">
-              <Table>
+        <TabsContent value="collections" className="mt-3 sm:mt-4 min-w-0">
+          <Panel title="Pending Collection Dashboard" subtitle="Bill-wise payment status" className="min-w-0" testId="collections-panel">
+            <div className="max-h-[500px] overflow-auto border rounded-md min-w-0">
+              <Table className="min-w-[550px] text-xs sm:text-sm">
                 <TableHeader className="sticky top-0 bg-card z-10">
                   <TableRow>
-                    <TableHead>Bill No</TableHead><TableHead>Party</TableHead><TableHead>Date</TableHead>
-                    <TableHead>Due</TableHead><TableHead className="text-right">Amount</TableHead><TableHead>Status</TableHead>
+                    <TableHead className="py-2">Bill No</TableHead>
+                    <TableHead className="py-2">Party</TableHead>
+                    <TableHead className="py-2">Date</TableHead>
+                    <TableHead className="py-2">Due</TableHead>
+                    <TableHead className="py-2 text-right">Amount</TableHead>
+                    <TableHead className="py-2">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {d.pending_collections.length === 0 && <TableRow><TableCell colSpan={6}><EmptyState /></TableCell></TableRow>}
+                  {d.pending_collections.length === 0 && <TableRow><TableCell colSpan={6} className="py-6"><EmptyState /></TableCell></TableRow>}
                   {d.pending_collections.map((c, i) => (
                     <TableRow key={i} data-testid={`collection-row-${i}`}>
-                      <TableCell className="font-mono text-xs">{c.bill_no}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{c.party}</TableCell>
-                      <TableCell>{fmtDate(c.date)}</TableCell>
-                      <TableCell>{fmtDate(c.due_date)}</TableCell>
-                      <TableCell className="text-right font-mono">{fmtFull(c.amount)}</TableCell>
-                      <TableCell>
-                        <Badge variant={c.status === "Overdue" ? "destructive" : "secondary"}>
+                      <TableCell className="font-mono text-[11px] sm:text-xs py-2">{c.bill_no}</TableCell>
+                      <TableCell className="max-w-[180px] truncate py-2 font-medium">{c.party}</TableCell>
+                      <TableCell className="py-2 whitespace-nowrap">{fmtDate(c.date)}</TableCell>
+                      <TableCell className="py-2 whitespace-nowrap">{fmtDate(c.due_date)}</TableCell>
+                      <TableCell className="text-right font-mono py-2">{fmtFull(c.amount)}</TableCell>
+                      <TableCell className="py-2">
+                        <Badge variant={c.status === "Overdue" ? "destructive" : "secondary"} className="text-[10px] sm:text-xs py-0">
                           {c.status}{c.overdue_days > 0 ? ` ${c.overdue_days}d` : ""}
                         </Badge>
                       </TableCell>

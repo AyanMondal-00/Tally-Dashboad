@@ -1,0 +1,30 @@
+{
+  "name": "tally-dashboard-backend",
+  "version": "1.0.0",
+  "description": "Node.js & Express REST API Backend for Tally Pulse Dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --max-old-space-size=8192 server.js",
+    "dev": "nodemon --exec \"node --max-old-space-size=8192\" server.js"
+  },
+  "keywords": [
+    "tally",
+    "dashboard",
+    "express",
+    "nodejs",
+    "mongodb"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.3",
+    "express": "^5.2.1",
+    "fast-xml-parser": "^5.11.1",
+    "mongodb": "^7.6.0",
+    "multer": "^2.4.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
