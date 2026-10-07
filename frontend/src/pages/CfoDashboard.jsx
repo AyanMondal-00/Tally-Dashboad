@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useDashboard } from "@/hooks/useDashboard";
 import { Panel, SectionHeader, KpiCard, ResponsiveChart } from "@/components/shared/Widgets";
 import { PageLoading, EmptyState } from "@/components/shared/States";
@@ -10,6 +10,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
+import { LedgerDrilldown } from "@/components/shared/LedgerDrilldown";
+
 const chartTip = {
   contentStyle: { borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", fontSize: 12 },
 };
@@ -18,16 +20,16 @@ const BUCKETS = [
   { key: "61_90", label: "61–90d" }, { key: "above_90", label: "90d+" },
 ];
 
-const AgingBlock = ({ title, aging, testId }) => {
+const AgingBlock = ({ title, aging, testId, onSelectLedger }) => {
   const chartData = BUCKETS.map((b) => ({ name: b.label, value: aging.buckets[b.key], key: b.key }));
   const total = Object.values(aging.buckets).reduce((a, b) => a + b, 0);
   return (
     <Panel title={title} subtitle={`Total outstanding ${fmtMoney(total)}`} testId={testId}>
       <ResponsiveChart height={200}>
-        <BarChart data={chartData} margin={{ left: -10, right: 8 }}>
+        <BarChart data={chartData} margin={{ left: 10, right: 12, top: 10, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
           <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-          <YAxis tickFormatter={(v) => fmtMoney(v)} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" width={60} />
+          <YAxis tickFormatter={(v) => fmtMoney(v)} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" width={72} />
           <Tooltip {...chartTip} formatter={(v) => fmtFull(v)} />
           <Bar dataKey="value" radius={[4, 4, 0, 0]} isAnimationActive={false}>
             {chartData.map((e) => <Cell key={e.key} fill={CHART.aging[e.key]} />)}
@@ -36,9 +38,14 @@ const AgingBlock = ({ title, aging, testId }) => {
       </ResponsiveChart>
       <div className="mt-3 max-h-40 overflow-auto no-scrollbar space-y-1">
         {aging.rows.slice(0, 8).map((r, i) => (
-          <div key={i} className="flex justify-between text-sm px-1 py-1 border-b border-border/40 last:border-0">
-            <span className="truncate">{r.name}</span>
-            <span className="font-mono ml-2 shrink-0" style={{ color: CHART.aging[r.bucket] }}>{fmtMoney(r.amount)}</span>
+          <div
+            key={i}
+            className="flex justify-between text-sm px-1.5 py-1 rounded-md border-b border-border/40 last:border-0 hover:bg-accent/50 cursor-pointer transition-colors"
+            onClick={() => onSelectLedger && onSelectLedger({ id: r.id || r.name, name: r.name })}
+            title="Click to view ledger transactions"
+          >
+            <span className="truncate hover:underline">{r.name}</span>
+            <span className="font-mono ml-2 shrink-0 font-medium" style={{ color: CHART.aging[r.bucket] }}>{fmtMoney(r.amount)}</span>
           </div>
         ))}
         {aging.rows.length === 0 && <EmptyState label="Nothing outstanding" />}
@@ -70,6 +77,7 @@ const StatementTable = ({ rows = [], cols = [] }) => (
 
 export default function CfoDashboard() {
   const { data, isLoading } = useDashboard("cfo");
+  const [activeLedger, setActiveLedger] = useState(null);
   if (isLoading || !data) return <PageLoading />;
   const d = data.data;
   const pnl = d.financials.pnl;
@@ -93,18 +101,28 @@ export default function CfoDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 min-w-0">
-        <AgingBlock title="Receivables Aging" aging={d.receivables} testId="aging-chart-receivables" />
-        <AgingBlock title="Payables Aging" aging={d.payables} testId="aging-chart-payables" />
+        <AgingBlock
+          title="Receivables Aging"
+          aging={d.receivables}
+          testId="aging-chart-receivables"
+          onSelectLedger={(l) => setActiveLedger(l)}
+        />
+        <AgingBlock
+          title="Payables Aging"
+          aging={d.payables}
+          testId="aging-chart-payables"
+          onSelectLedger={(l) => setActiveLedger(l)}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 min-w-0">
         <Panel title="Cash Flow Projection" subtitle="Expected collections vs upcoming liabilities" className="lg:col-span-2 min-w-0" testId="cfo-projection-panel">
           {d.projection.length ? (
             <ResponsiveChart height={260}>
-              <BarChart data={d.projection} margin={{ left: -15, right: 8, top: 10, bottom: 0 }}>
+              <BarChart data={d.projection} margin={{ left: 10, right: 12, top: 10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                 <XAxis dataKey="period" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis tickFormatter={(v) => fmtMoney(v)} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={55} />
+                <YAxis tickFormatter={(v) => fmtMoney(v)} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={72} />
                 <Tooltip {...chartTip} formatter={(v) => fmtFull(v)} />
                 <Legend wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
                 <Bar dataKey="collections" name="Collections" fill={CHART.receipts} radius={[4, 4, 0, 0]} isAnimationActive={false} />
@@ -167,6 +185,14 @@ export default function CfoDashboard() {
           </TabsContent>
         </Tabs>
       </Panel>
+
+      {activeLedger && (
+        <LedgerDrilldown
+          ledgerId={activeLedger.id}
+          name={activeLedger.name}
+          onClose={() => setActiveLedger(null)}
+        />
+      )}
     </div>
   );
 }

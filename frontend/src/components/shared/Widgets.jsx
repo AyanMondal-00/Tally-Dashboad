@@ -15,17 +15,17 @@ export const KpiCard = ({ label, value, mom, tone = "primary", icon: Icon, testI
     amber: "text-amber-600 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-400",
   };
   return (
-    <Card data-testid={testId} className="p-3.5 sm:p-5 border-border/70 shadow-xs hover:shadow-md transition-all duration-200 animate-fade-up min-w-0 flex flex-col justify-between">
+    <Card data-testid={testId} className="p-3.5 sm:p-4 md:p-5 border-border/70 shadow-xs hover:shadow-md transition-all duration-200 animate-fade-up min-w-0 flex flex-col justify-between">
       <div>
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-muted-foreground truncate">{label}</p>
+        <div className="flex items-start justify-between gap-1.5 sm:gap-2">
+          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-muted-foreground break-words leading-tight flex-1" title={label}>{label}</p>
           {Icon && (
             <span className={cn("p-1.5 sm:p-2 rounded-lg shrink-0", toneMap[tone])}>
               <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </span>
           )}
         </div>
-        <p className="mt-2 sm:mt-3 text-lg sm:text-2xl lg:text-3xl font-bold font-mono tracking-tight truncate" title={isCurrency ? fmtFull(value) : String(value)}>
+        <p className="mt-2 sm:mt-3 text-base sm:text-xl md:text-2xl lg:text-3xl font-bold font-mono tracking-tight truncate" title={isCurrency ? fmtFull(value) : String(value)}>
           {isCurrency ? fmtMoney(value) : value}
         </p>
       </div>

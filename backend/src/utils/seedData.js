@@ -50,7 +50,7 @@ const REGIONS = ["North", "South", "East", "West", "Central"];
 const COMPANIES = [
   { id: "acme-tech", name: "Acme Tech Corp", branch: "Head Office", currency: "INR", symbol: "₹", scale: 1.0, seed: 101 },
   { id: "acme-retail", name: "Acme Retail West", branch: "Mumbai Branch", currency: "INR", symbol: "₹", scale: 0.55, seed: 202 },
-  { id: "acme-global", name: "Acme Global Exports", branch: "SEZ Unit", currency: "USD", symbol: "$", scale: 1.45, seed: 303 }
+  { id: "acme-global", name: "Acme Global Exports", branch: "SEZ Unit", currency: "INR", symbol: "₹", scale: 1.45, seed: 303 }
 ];
 
 const VTYPES = ["Sales", "Purchase", "Receipt", "Payment", "Journal"];
@@ -634,7 +634,15 @@ function buildCompany(cfg) {
       currency: cfg.currency,
       symbol: cfg.symbol,
       last_sync: formatDateTime(TODAY),
-      source: "Demo Data"
+      source: "Demo Data",
+      period_info: {
+        min_date: "2025-04-01",
+        max_date: "2026-06-15",
+        years_count: 2,
+        financial_years: ["FY 2026-27", "FY 2025-26"],
+        months: months.map(m => `${m.yy}-${String(m.mm).padStart(2, '0')}`),
+        has_transactions: true
+      }
     },
     ceo: {
       business_snapshot: {

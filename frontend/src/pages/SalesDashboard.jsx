@@ -10,30 +10,40 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TrendingUp, ClipboardList, MapPin, Repeat } from "lucide-react";
+import { LedgerDrilldown } from "@/components/shared/LedgerDrilldown";
 
 const chartTip = {
   contentStyle: { borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", fontSize: 12 },
 };
 const soStatus = {
-  Open: "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300",
+  Open: "bg-blue-100 text-blue-700 dark:bg-amber-950/50 dark:text-blue-300",
   Partial: "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
   Backorder: "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300",
 };
 
-const HBar = ({ rows = [], nameKey = "name", color }) => (
+const HBar = ({ rows = [], nameKey = "name", color, onRowClick }) => (
   <ResponsiveChart height={260}>
     <BarChart data={rows.slice(0, 8)} layout="vertical" margin={{ left: 10, right: 12, top: 10, bottom: 0 }}>
       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
       <XAxis type="number" tickFormatter={(v) => fmtMoney(v)} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
       <YAxis type="category" dataKey={nameKey} width={95} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
       <Tooltip {...chartTip} formatter={(v) => fmtFull(v)} />
-      <Bar dataKey="value" name="Revenue" fill={color} radius={[0, 4, 4, 0]} isAnimationActive={false} />
+      <Bar
+        dataKey="value"
+        name="Revenue"
+        fill={color}
+        radius={[0, 4, 4, 0]}
+        isAnimationActive={false}
+        onClick={(entry) => onRowClick && onRowClick(entry)}
+        className={onRowClick ? "cursor-pointer" : ""}
+      />
     </BarChart>
   </ResponsiveChart>
 );
 
 export default function SalesDashboard() {
   const { data, isLoading } = useDashboard("sales");
+  const [activeLedger, setActiveLedger] = useState(null);
   if (isLoading || !data) return <PageLoading />;
   const d = data.data;
   const openOrders = d.pending_orders.length;
@@ -61,7 +71,19 @@ export default function SalesDashboard() {
               <TabsTrigger value="rep" className="text-xs" data-testid="sales-tab-rep">By Rep</TabsTrigger>
             </TabsList>
           </div>
-          <TabsContent value="customer" className="mt-3 min-w-0">{d.by_customer.length ? <HBar rows={d.by_customer} nameKey="name" color={CHART.sales} /> : <EmptyState />}</TabsContent>
+          <TabsContent value="customer" className="mt-3 min-w-0">
+            {d.by_customer.length ? (
+              <HBar
+                rows={d.by_customer}
+                nameKey="name"
+                color={CHART.sales}
+                onRowClick={(entry) => {
+                  const custName = entry?.name || entry?.payload?.name;
+                  if (custName) setActiveLedger({ id: custName, name: custName });
+                }}
+              />
+            ) : <EmptyState />}
+          </TabsContent>
           <TabsContent value="item" className="mt-3 min-w-0">{d.by_item.length ? <HBar rows={d.by_item} nameKey="name" color={CHART.purchases} /> : <EmptyState label="No item data" />}</TabsContent>
           <TabsContent value="group" className="mt-3 min-w-0">
             {d.by_group.length ? (
@@ -78,10 +100,10 @@ export default function SalesDashboard() {
           <TabsContent value="region" className="mt-3 min-w-0">
             {d.by_region.length ? (
               <ResponsiveChart height={260}>
-                <BarChart data={d.by_region} margin={{ left: -15, right: 8, top: 10, bottom: 0 }}>
+                <BarChart data={d.by_region} margin={{ left: 10, right: 12, top: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis tickFormatter={(v) => fmtMoney(v)} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={55} />
+                  <YAxis tickFormatter={(v) => fmtMoney(v)} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={72} />
                   <Tooltip {...chartTip} formatter={(v) => fmtFull(v)} />
                   <Bar dataKey="value" name="Revenue" fill={CHART.receipts} radius={[4, 4, 0, 0]} isAnimationActive={false} />
                 </BarChart>
@@ -108,9 +130,15 @@ export default function SalesDashboard() {
               <TableBody>
                 {d.pending_orders.length === 0 && <TableRow><TableCell colSpan={5} className="py-6"><EmptyState label="No pending orders" /></TableCell></TableRow>}
                 {d.pending_orders.map((o, i) => (
-                  <TableRow key={i} data-testid={`so-row-${i}`}>
+                  <TableRow
+                    key={i}
+                    data-testid={`so-row-${i}`}
+                    onClick={() => setActiveLedger({ id: o.customer, name: o.customer })}
+                    className="cursor-pointer hover:bg-muted/60 transition-colors"
+                    title={`Click to inspect statement for ${o.customer}`}
+                  >
                     <TableCell className="font-mono text-[11px] sm:text-xs py-2">{o.so_no}</TableCell>
-                    <TableCell className="max-w-[140px] truncate py-2 font-medium">{o.customer}</TableCell>
+                    <TableCell className="max-w-[140px] truncate py-2 font-medium text-primary hover:underline">{o.customer}</TableCell>
                     <TableCell className="py-2 whitespace-nowrap">{fmtDate(o.delivery_date)}</TableCell>
                     <TableCell className="text-right font-mono py-2">{fmtFull(o.amount)}</TableCell>
                     <TableCell className="py-2"><Badge variant="secondary" className={`${soStatus[o.status]} text-[10px] sm:text-xs py-0`}>{o.status}</Badge></TableCell>
@@ -125,9 +153,15 @@ export default function SalesDashboard() {
           <div className="max-h-80 overflow-auto space-y-2">
             {d.buying_patterns.length === 0 && <EmptyState />}
             {d.buying_patterns.map((b, i) => (
-              <div key={i} className="rounded-md border border-border p-2.5 sm:p-3" data-testid={`pattern-row-${i}`}>
+              <div
+                key={i}
+                className="rounded-md border border-border p-2.5 sm:p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                data-testid={`pattern-row-${i}`}
+                onClick={() => setActiveLedger({ id: b.customer, name: b.customer })}
+                title={`Click to inspect statement for ${b.customer}`}
+              >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs sm:text-sm font-medium truncate">{b.customer}</span>
+                  <span className="text-xs sm:text-sm font-medium truncate text-primary hover:underline">{b.customer}</span>
                   <Badge variant={b.flag === "Upsell" ? "default" : "secondary"} className="text-[10px] sm:text-xs shrink-0">{b.flag}</Badge>
                 </div>
                 <p className="text-[11px] sm:text-xs text-muted-foreground mt-1">
@@ -171,6 +205,15 @@ export default function SalesDashboard() {
           </Table>
         </div>
       </Panel>
+
+      {/* Ledger Drilldown Modal */}
+      {activeLedger && (
+        <LedgerDrilldown
+          ledgerId={activeLedger.id}
+          name={activeLedger.name}
+          onClose={() => setActiveLedger(null)}
+        />
+      )}
     </div>
   );
 }

@@ -103,13 +103,70 @@ router.get('/dashboard/:role', async (req, res, next) => {
       return res.status(404).json({ detail: "Company not found" });
     }
 
-    const roleData = doc[role.toLowerCase()];
+    const roleKey = role.toLowerCase();
+    let roleData = doc[roleKey];
     if (!roleData) {
       return res.status(404).json({ detail: "Dashboard data unavailable for this role" });
     }
 
+    const { start_date, end_date, period } = req.query;
+    let fromDate = start_date || null;
+    let toDate = end_date || null;
+
+    if (period) {
+      if (period.startsWith("FY ")) {
+        // e.g. "FY 2025-26" -> 2025-04-01 to 2026-03-31
+        const match = period.match(/FY (\d{4})-(\d{2})/);
+        if (match) {
+          const startYear = parseInt(match[1], 10);
+          const endYear = startYear + 1;
+          fromDate = `${startYear}-04-01`;
+          toDate = `${endYear}-03-31`;
+        }
+      } else if (period.startsWith("Q")) {
+        // e.g. "Q1 2025-26", "Q2 2025-26"
+        const match = period.match(/Q(\d) (\d{4})-(\d{2})/);
+        if (match) {
+          const qNum = parseInt(match[1], 10);
+          const startYear = parseInt(match[2], 10);
+          if (qNum === 1) { fromDate = `${startYear}-04-01`; toDate = `${startYear}-06-30`; }
+          else if (qNum === 2) { fromDate = `${startYear}-07-01`; toDate = `${startYear}-09-30`; }
+          else if (qNum === 3) { fromDate = `${startYear}-10-01`; toDate = `${startYear}-12-31`; }
+          else if (qNum === 4) { fromDate = `${startYear + 1}-01-01`; toDate = `${startYear + 1}-03-31`; }
+        }
+      } else if (/^\d{4}-\d{2}$/.test(period)) {
+        // e.g. "2026-05" -> Month filter
+        fromDate = `${period}-01`;
+        const [y, m] = period.split('-').map(Number);
+        const lastDay = new Date(y, m, 0).getDate();
+        toDate = `${period}-${String(lastDay).padStart(2, '0')}`;
+      }
+    }
+
+    // If company has raw_vouchers and a date filter is applied, compute filtered view
+    if (doc.raw_vouchers && doc.raw_vouchers.length && (fromDate || toDate)) {
+      const filteredVouchers = doc.raw_vouchers.filter(v => {
+        if (!v.date) return false;
+        if (fromDate && v.date < fromDate) return false;
+        if (toDate && v.date > toDate) return false;
+        return true;
+      });
+
+      const recomputed = buildFromVouchers(doc.company_id, doc.meta.name, filteredVouchers);
+      if (recomputed && recomputed[roleKey]) {
+        roleData = recomputed[roleKey];
+      }
+    }
+
     res.json({
-      meta: doc.meta,
+      meta: {
+        ...doc.meta,
+        filter: {
+          period: period || "all",
+          from_date: fromDate,
+          to_date: toDate
+        }
+      },
       data: roleData
     });
   } catch (error) {
@@ -135,9 +192,23 @@ router.get('/ledger/:ledger_id', async (req, res, next) => {
       return res.status(404).json({ detail: "Company not found" });
     }
 
-    const statement = doc.ledger_statements ? doc.ledger_statements[ledger_id] : null;
+    let statement = doc.ledger_statements ? doc.ledger_statements[ledger_id] : null;
+
+    // Fallback: search by name or normalized id if not matched directly
+    if (!statement && doc.ledger_statements) {
+      const target = decodeURIComponent(ledger_id).toLowerCase().replace(/[^a-z0-9]+/g, '');
+      for (const [key, val] of Object.entries(doc.ledger_statements)) {
+        const cleanKey = key.replace(/[^a-z0-9]+/g, '');
+        const cleanName = (val.name || "").toLowerCase().replace(/[^a-z0-9]+/g, '');
+        if (cleanKey === target || cleanName === target) {
+          statement = val;
+          break;
+        }
+      }
+    }
+
     if (!statement) {
-      return res.status(404).json({ detail: "Ledger not found" });
+      return res.status(404).json({ detail: "Ledger statement not found" });
     }
 
     res.json({

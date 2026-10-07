@@ -65,9 +65,10 @@ app.use((err, req, res, next) => {
 async function seedIfEmpty(force = false) {
   try {
     const db = getDB();
-    const count = await db.collection('company_data').countDocuments({ "meta.source": "Demo Data" });
+    const count = await db.collection('company_data').countDocuments();
     
-    if (count === 0 || force) {
+    // Only seed if database is 100% empty AND force flag is true
+    if (count === 0 && force) {
       const docs = seedData.buildAll();
       for (const d of docs) {
         await db.collection('company_data').replaceOne(
@@ -78,7 +79,7 @@ async function seedIfEmpty(force = false) {
       }
       console.log(`[Seed Data] Successfully seeded ${docs.length} demo companies into MongoDB.`);
     } else {
-      console.log(`[Seed Data] Found existing demo data (${count} companies). Skipping seed.`);
+      console.log(`[Database] Total company records: ${count}. Automatic demo seeding skipped.`);
     }
   } catch (err) {
     console.error('[Seed Data Error]:', err.message);
@@ -93,8 +94,8 @@ async function startServer() {
     // Connect to MongoDB
     await connectDB();
 
-    // Seed Demo Data if needed
-    await seedIfEmpty();
+    // Verify database state (demo seeding disabled)
+    await seedIfEmpty(false);
 
     // Start listening on configured port
     const server = app.listen(PORT, () => {

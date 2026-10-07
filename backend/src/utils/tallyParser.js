@@ -608,6 +608,43 @@ function buildFromVouchers(companyId, companyName, vouchers = [], mastersLedgers
   const lastSyncStr = `${nowIso.slice(0, 10)} ${nowIso.slice(11, 16)}`;
   const isMastersOnly = validVouchers.length === 0 && (mastersLedgers && mastersLedgers.length > 0);
 
+  // Compute date range, financial years and quarters from vouchers
+  const voucherDates = validVouchers.map(v => v.date).filter(Boolean).sort();
+  const minDate = voucherDates.length > 0 ? voucherDates[0] : "";
+  const maxDate = voucherDates.length > 0 ? voucherDates[voucherDates.length - 1] : "";
+
+  const fySet = new Set();
+  const monthSet = new Set();
+  voucherDates.forEach(d => {
+    if (d.length >= 7) {
+      monthSet.add(d.slice(0, 7));
+      const y = parseInt(d.slice(0, 4), 10);
+      const m = parseInt(d.slice(5, 7), 10);
+      const fyStart = m >= 4 ? y : y - 1;
+      fySet.add(`FY ${fyStart}-${String(fyStart + 1).slice(2)}`);
+    }
+  });
+
+  const availableFys = Array.from(fySet).sort().reverse();
+  const availableMonths = Array.from(monthSet).sort().reverse();
+
+  // Compute years span
+  let totalYearsCount = 0;
+  if (minDate && maxDate) {
+    const y1 = parseInt(minDate.slice(0, 4), 10);
+    const y2 = parseInt(maxDate.slice(0, 4), 10);
+    totalYearsCount = Math.max(y2 - y1 + 1, availableFys.length || 1);
+  }
+
+  const periodInfo = {
+    min_date: minDate,
+    max_date: maxDate,
+    years_count: totalYearsCount,
+    financial_years: availableFys,
+    months: availableMonths,
+    has_transactions: validVouchers.length > 0
+  };
+
   return {
     company_id: companyId,
     raw_vouchers: validVouchers,
@@ -624,7 +661,8 @@ function buildFromVouchers(companyId, companyName, vouchers = [], mastersLedgers
         ? `Loaded ${ledgers.length} ledger masters. For Day Book transactions, Sales, and Purchase trends, export 'Day Book' (Transactions) from Tally.`
         : null,
       last_sync: lastSyncStr,
-      source: "Tally Import"
+      source: "Tally Import",
+      period_info: periodInfo
     },
     ceo: {
       business_snapshot: {

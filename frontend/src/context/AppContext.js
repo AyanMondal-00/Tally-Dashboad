@@ -8,13 +8,19 @@ export const useApp = () => useContext(AppContext);
 export function AppProvider({ children }) {
   const [companies, setCompanies] = useState([]);
   const [companyId, setCompanyId] = useState(null);
+  const [period, setPeriod] = useState("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [dark, setDark] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const refreshCompanies = async () => {
     const list = await getCompanies();
     setCompanies(list);
-    setCompanyId((prev) => prev || (list[0] && list[0].id) || null);
+    setCompanyId((prev) => {
+      const exists = list.some((c) => c.id === prev);
+      return exists ? prev : (list[0] && list[0].id) || null;
+    });
     return list;
   };
 
@@ -34,7 +40,22 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider
-      value={{ companies, company, companyId, setCompanyId, refreshCompanies, dark, setDark, loading }}
+      value={{
+        companies,
+        company,
+        companyId,
+        setCompanyId,
+        period,
+        setPeriod,
+        startDate,
+        setStartDate,
+        endDate,
+        setEndDate,
+        refreshCompanies,
+        dark,
+        setDark,
+        loading
+      }}
     >
       {children}
     </AppContext.Provider>

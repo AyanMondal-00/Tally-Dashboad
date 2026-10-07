@@ -10,20 +10,31 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  DollarSign, ShoppingBag, ArrowDownToLine, ArrowUpFromLine, Wallet, Landmark, Coins, AlertTriangle,
+  IndianRupee, TrendingUp, ShoppingBag, ArrowDownToLine, ArrowUpFromLine, Wallet, Landmark, Coins, AlertTriangle,
 } from "lucide-react";
+
+import { LedgerDrilldown } from "@/components/shared/LedgerDrilldown";
 
 const chartTip = {
   contentStyle: { borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", fontSize: 12 },
 };
 
-const TopList = ({ rows, valueKey, nameKey = "name", limit }) => (
+const TopList = ({ rows, valueKey, nameKey = "name", limit, onSelectLedger }) => (
   <div className="space-y-1">
     {rows.slice(0, limit).map((r, i) => {
       const max = rows[0][valueKey] || 1;
       const pct = Math.max((r[valueKey] / max) * 100, 3);
+      const isClickable = Boolean(onSelectLedger);
       return (
-        <div key={i} className="relative rounded-md px-3 py-2 overflow-hidden" data-testid={`topper-row-${i}`}>
+        <div
+          key={i}
+          className={`relative rounded-md px-3 py-2 overflow-hidden transition-colors ${
+            isClickable ? "cursor-pointer hover:ring-1 hover:ring-blue-500/50 hover:bg-accent/40" : ""
+          }`}
+          data-testid={`topper-row-${i}`}
+          onClick={() => isClickable && onSelectLedger(r)}
+          title={isClickable ? `Click to view ledger statement for ${r[nameKey]}` : undefined}
+        >
           <div className="absolute inset-y-0 left-0 bg-blue-50 dark:bg-blue-950/40" style={{ width: `${pct}%` }} />
           <div className="relative flex items-center justify-between text-sm">
             <span className="flex items-center gap-2 truncate">
@@ -41,6 +52,7 @@ const TopList = ({ rows, valueKey, nameKey = "name", limit }) => (
 export default function CeoDashboard() {
   const { data, isLoading } = useDashboard("ceo");
   const [topN, setTopN] = useState(5);
+  const [activeLedger, setActiveLedger] = useState(null);
   if (isLoading || !data) return <PageLoading />;
   const d = data.data;
   const bs = d.business_snapshot;
@@ -51,8 +63,8 @@ export default function CeoDashboard() {
       <SectionHeader title="CEO Dashboard" subtitle="Executive strategic view · liquidity, growth & watchlists" />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
-        <KpiCard testId="kpi-gross-sales-value" label="Gross Sales" value={bs.gross_sales} mom={bs.mom.sales} tone="primary" icon={DollarSign} />
-        <KpiCard testId="kpi-net-sales-value" label="Net Sales" value={bs.net_sales} tone="emerald" icon={DollarSign} />
+        <KpiCard testId="kpi-gross-sales-value" label="Gross Sales" value={bs.gross_sales} mom={bs.mom.sales} tone="primary" icon={TrendingUp} />
+        <KpiCard testId="kpi-net-sales-value" label="Net Sales" value={bs.net_sales} tone="emerald" icon={IndianRupee} />
         <KpiCard testId="kpi-purchases-value" label="Total Purchases" value={bs.total_purchases} mom={bs.mom.purchases} tone="violet" icon={ShoppingBag} />
         <KpiCard testId="kpi-receipts-value" label="Total Receipts" value={bs.total_receipts} mom={bs.mom.receipts} tone="emerald" icon={ArrowDownToLine} />
         <div className="col-span-2 sm:col-span-1">
@@ -63,7 +75,7 @@ export default function CeoDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 min-w-0">
         <Panel title="Executive Trends" subtitle="Monthly sales, gross profit & margin" className="lg:col-span-2 min-w-0" testId="ceo-trends-panel">
           <ResponsiveChart height={280}>
-            <AreaChart data={d.trends.monthly} margin={{ left: -15, right: 8, top: 10, bottom: 0 }}>
+            <AreaChart data={d.trends.monthly} margin={{ left: 10, right: 12, top: 10, bottom: 0 }}>
               <defs>
                 <linearGradient id="gSales" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={CHART.sales} stopOpacity={0.3} />
@@ -76,7 +88,7 @@ export default function CeoDashboard() {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
               <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-              <YAxis tickFormatter={(v) => fmtMoney(v)} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={60} />
+              <YAxis tickFormatter={(v) => fmtMoney(v)} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={72} />
               <Tooltip {...chartTip} formatter={(v) => fmtFull(v)} />
               <Legend wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
               <Area type="monotone" dataKey="sales" name="Sales" stroke={CHART.sales} fill="url(#gSales)" strokeWidth={2} isAnimationActive={false} />
@@ -137,10 +149,20 @@ export default function CeoDashboard() {
               </TabsList>
             </div>
             <TabsContent value="customers" className="mt-3 max-h-[340px] overflow-y-auto no-scrollbar">
-              <TopList rows={d.toppers.customers} valueKey="billing" limit={topN} />
+              <TopList
+                rows={d.toppers.customers}
+                valueKey="billing"
+                limit={topN}
+                onSelectLedger={(r) => setActiveLedger({ id: r.id || r.name, name: r.name })}
+              />
             </TabsContent>
             <TabsContent value="suppliers" className="mt-3 max-h-[340px] overflow-y-auto no-scrollbar">
-              <TopList rows={d.toppers.suppliers} valueKey="billing" limit={topN} />
+              <TopList
+                rows={d.toppers.suppliers}
+                valueKey="billing"
+                limit={topN}
+                onSelectLedger={(r) => setActiveLedger({ id: r.id || r.name, name: r.name })}
+              />
             </TabsContent>
             <TabsContent value="items" className="mt-3 max-h-[340px] overflow-y-auto no-scrollbar">
               {d.toppers.items.length ? <TopList rows={d.toppers.items} valueKey="revenue" limit={topN} /> : <EmptyState label="No item data" />}
@@ -152,7 +174,13 @@ export default function CeoDashboard() {
           <div className="space-y-2 max-h-[340px] overflow-y-auto no-scrollbar">
             {d.inactive.length === 0 && <EmptyState label="No dormant accounts" />}
             {d.inactive.map((c, i) => (
-              <div key={i} className="flex items-center justify-between gap-2 rounded-md border border-amber-200 dark:border-amber-900/50 bg-amber-50/60 dark:bg-amber-950/20 px-2.5 sm:px-3 py-2" data-testid={`inactive-row-${i}`}>
+              <div
+                key={i}
+                className="flex items-center justify-between gap-2 rounded-md border border-amber-200 dark:border-amber-900/50 bg-amber-50/60 dark:bg-amber-950/20 px-2.5 sm:px-3 py-2 cursor-pointer hover:bg-amber-100/60 transition-colors"
+                data-testid={`inactive-row-${i}`}
+                onClick={() => setActiveLedger({ id: c.id || c.name, name: c.name })}
+                title="Click to view ledger transactions"
+              >
                 <div className="min-w-0 flex-1">
                   <p className="text-xs sm:text-sm font-medium truncate flex items-center gap-1.5">
                     <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
@@ -166,6 +194,14 @@ export default function CeoDashboard() {
           </div>
         </Panel>
       </div>
+
+      {activeLedger && (
+        <LedgerDrilldown
+          ledgerId={activeLedger.id}
+          name={activeLedger.name}
+          onClose={() => setActiveLedger(null)}
+        />
+      )}
     </div>
   );
 }
